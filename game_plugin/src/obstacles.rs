@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::{
     game_map::GameMap,
     loading::TextureAssets,
-    player::{PlayerShip, PlayerShipSide},
+    player::{IsDead, Player, PlayerShip, PlayerShipSide},
     GameState,
 };
 
@@ -84,7 +84,7 @@ pub fn spawn_obstacles(
             material: materials.add(textures.cloud_001.clone().into()),
             transform: Transform::from_translation(Vec3::new(
                 0.,
-                game_map.top_y() - game_map.pad_y * 2. * game_map.sprite_size, // spawn out of sight
+                game_map.top_y() + game_map.pad_y * 3. * game_map.sprite_size, // spawn out of sight
                 1.,
             )),
             sprite: Sprite {
@@ -114,10 +114,17 @@ pub fn move_obstacles(
 
 /// Compares player and ship positions and kills the ship if it hits an obstacle
 pub fn check_for_obstacle_collisions(
+    mut commands: Commands,
     game_map: Res<GameMap>,
+    mut ship: ResMut<PlayerShip>,
+    players: Query<Entity, (With<Player>, Without<IsDead>)>,
     obstacles: Query<&Transform, With<Obstacle>>,
     ship_sides: Query<&Transform, With<PlayerShipSide>>,
 ) {
+    if ship.is_dead {
+        return;
+    }
+
     for obs_tx in obstacles.iter() {
         for ship_tx in ship_sides.iter() {
             let dx = ship_tx.translation.x - obs_tx.translation.x;
@@ -126,7 +133,12 @@ pub fn check_for_obstacle_collisions(
                 let dy = ship_tx.translation.y - obs_tx.translation.y;
 
                 if dy.abs() < 0.9 * game_map.sprite_size {
-                    println!("TODO: hit obstacle");
+                    println!("hit obstacle");
+
+                    commands.entity(players.single().unwrap()).insert(IsDead);
+                    ship.is_dead = true;
+
+                    return;
                 }
             }
         }
