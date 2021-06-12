@@ -15,7 +15,11 @@ fn main() {
     let mut app = App::build();
     app
         // .insert_resource(Msaa { samples: 4 })
-        .insert_resource(ClearColor(Color::rgb(0.4, 0.4, 0.4)))
+        .insert_resource(ClearColor(Color::rgb(
+            121. / 255.,
+            179. / 255.,
+            206. / 255.,
+        )))
         .insert_resource(WindowDescriptor {
             width: (game_map.width + 2. * game_map.pad_x) * game_map.sprite_size,
             height: (game_map.height + 2. * game_map.pad_y) * game_map.sprite_size,
