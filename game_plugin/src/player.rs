@@ -146,7 +146,7 @@ fn move_player(
     actions: Res<Actions>,
     game_map: Res<GameMap>,
     mut ship: ResMut<PlayerShip>,
-    mut ship_side_tx_query: Query<(&mut Transform, &PlayerShipSide)>,
+    mut ship_sides: Query<(&mut Transform, &PlayerShipSide)>,
 ) {
     // if we don't have a player, don't move
     if ship.is_dead {
@@ -157,43 +157,72 @@ fn move_player(
     ship.target_right =
         ship.target_right + (actions.player_right_move as f32) * game_map.sprite_size;
 
-    // update the ship side positions - remember that there is a rope connecting them, so we must also calculate
-    // the total applied movement and update the strain on the rope
-    let elapsed = time.delta_seconds();
-    for (mut tx, side) in ship_side_tx_query.iter_mut() {
-        tx.translation = match side {
-            PlayerShipSide::Left => {
-                get_ship_position(elapsed * ship.speed, &tx.translation, ship.target_left)
-            }
-            PlayerShipSide::Right => {
-                get_ship_position(elapsed * ship.speed, &tx.translation, ship.target_right)
-            }
-        };
-    }
-}
+    // check the current difference between the two ships
+    // TODO this is reused in multiple places, make it a helper function
+    let mut sides = ship_sides
+        .iter_mut()
+        .map(|(tx, _)| tx.translation.clone())
+        .collect::<Vec<_>>();
+    sides.sort_by_key(|s| (s.x * 1000.) as i32);
+    let dx = sides.iter().fold(0., |acc, tx| tx.x - acc);
 
-/// Helper function which moves a ship towards its target position
-fn get_ship_position(normalised_speed: f32, pos: &Vec3, target: f32) -> Vec3 {
-    if pos.x == target {
-        // in position
-        pos.clone()
+    // this is going to be a bit of a mouthful. Essentially what we want to do is tether the two
+    // ships together. So prevent them moving more than ship.max_separation apart, and let ships
+    // drag each other sideways once they reach max distance (assuming one is moving and one is static).
+    // If the ships are at max separation, then we need to start increasing the strain on the tether.
+    // (overstraining the tether is a loss condition).
+
+    // condition 1: both ships are within max separation distance and can move freely,
+    //              OR ships are at max separation distance but moving together
+    if dx < ship.max_separation
+        || (actions.player_left_move == -actions.player_right_move
+            && actions.player_right_move != 0)
+    {
+        // move normally
     } else {
-        // move the ship towards its preferred location
-        let delta_x = target - pos.x;
-        let max_move = delta_x.signum() * normalised_speed;
-
-        Vec3::new(
-            pos.x
-                + if delta_x < 0. {
-                    delta_x.clamp(max_move, 0.)
-                } else {
-                    delta_x.clamp(0., max_move)
-                },
-            pos.y,
-            pos.z,
-        )
+        // condition 2: ships are at max separation distance and not moving together
+        //   -> 2a: ships are not moving, do nothin
+        //   -> 2b: one ship is moving, drag the other ship
+        //   -> 2c: both ships are moving. If they're moving apart, stop them and increase strain
     }
+
+    // // update the ship side positions - remember that there is a rope connecting them, so we must also calculate
+    // // the total applied movement and update the strain on the rope
+    // let elapsed = time.delta_seconds();
+    // for (mut tx, side) in ship_sides.iter_mut() {
+    //     tx.translation = match side {
+    //         PlayerShipSide::Left => {
+    //             get_ship_position(elapsed * ship.speed, &tx.translation, ship.target_left)
+    //         }
+    //         PlayerShipSide::Right => {
+    //             get_ship_position(elapsed * ship.speed, &tx.translation, ship.target_right)
+    //         }
+    //     };
+    // }
 }
+
+// /// Helper function which moves a ship towards its target position
+// fn get_ship_position(normalised_speed: f32, pos: &Vec3, target: f32) -> Vec3 {
+//     if pos.x == target {
+//         // in position
+//         pos.clone()
+//     } else {
+//         // move the ship towards its preferred location
+//         let delta_x = target - pos.x;
+//         let max_move = delta_x.signum() * normalised_speed;
+
+//         Vec3::new(
+//             pos.x
+//                 + if delta_x < 0. {
+//                     delta_x.clamp(max_move, 0.)
+//                 } else {
+//                     delta_x.clamp(0., max_move)
+//                 },
+//             pos.y,
+//             pos.z,
+//         )
+//     }
+// }
 
 /// check if a player is ded
 pub fn is_player_dead_checks(
