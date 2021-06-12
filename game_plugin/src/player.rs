@@ -224,35 +224,55 @@ pub fn is_player_dead_checks(
 fn update_laser(
     time: Res<Time>,
     game_map: Res<GameMap>,
-    ship: Res<PlayerShip>,
+    mut ship: ResMut<PlayerShip>,
     mut lasers: Query<(&mut Transform, &mut TextureAtlasSprite, &mut Timer), With<Laser>>,
-    mut ship_sides: Query<&Transform, (With<PlayerShipSide>, Without<Laser>)>,
+    mut ship_sides: Query<(&Transform, &PlayerShipSide), Without<Laser>>,
 ) {
     if ship.is_dead {
         return;
     }
 
-    let mut sides = ship_sides
-        .iter_mut()
-        .map(|tx| tx.translation.clone())
-        .collect::<Vec<_>>();
-
-    sides.sort_by_key(|s| (s.x * 1000.) as i32);
+    let sides =
+        ship_sides
+            .iter_mut()
+            .fold((Vec3::ZERO, Vec3::ZERO), |acc, (tx, side)| match side {
+                PlayerShipSide::Left => (tx.translation, acc.1),
+                PlayerShipSide::Right => (acc.0, tx.translation),
+            });
 
     // stretch the laser to fit between the two sides
-    let dx = sides.iter().fold(0., |acc, tx| tx.x - acc);
+    let dx = sides.1.x - sides.0.x;
     let x_scale = 0.4 + dx / game_map.sprite_size;
+
+    // update separation strain
+    if dx > ship.max_separation {
+        // increase strain
+        ship.separation_strain += 0.3 * time.delta_seconds();
+    } else {
+        // reduce strain
+        if ship.separation_strain > 0. {
+            ship.separation_strain = (ship.separation_strain - time.delta_seconds()).clamp(0., 1.);
+        }
+    }
 
     for (mut laser, mut sprite, mut timer) in lasers.iter_mut() {
         // reposition the laser
         laser.scale.x = x_scale;
-        laser.translation.x = sides[0].x + dx / 2.;
+        laser.translation.x = sides.0.x + dx / 2.;
 
         // update the animation frame for the laser
         // show flickering if stress > 0.5
         timer.tick(time.delta());
         if timer.just_finished() {
-            let frame_count = if ship.separation_strain > 0.5 { 3 } else { 2 };
+            let frame_count = if dx > ship.max_separation {
+                if ship.separation_strain > 0.5 {
+                    4
+                } else {
+                    3
+                }
+            } else {
+                2
+            };
             sprite.index = (sprite.index + 1) % frame_count;
         }
     }
