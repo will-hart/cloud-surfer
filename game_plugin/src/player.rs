@@ -8,10 +8,13 @@ pub struct PlayerPlugin;
 
 pub struct Player;
 
+pub struct IsDead;
+
 #[derive(Debug, Copy, Clone)]
 pub struct PlayerShip {
+    pub is_dead: bool,
     pub speed: f32,
-
+    // TODO: stop movement when the ships are too far apart: pub max_separation: f32,
     pub target_left: f32,
     pub target_right: f32,
 }
@@ -28,7 +31,11 @@ impl Plugin for PlayerPlugin {
                 .with_system(spawn_player.system())
                 .with_system(spawn_camera.system()),
         )
-        .add_system_set(SystemSet::on_update(GameState::Playing).with_system(move_player.system()))
+        .add_system_set(
+            SystemSet::on_update(GameState::Playing)
+                .with_system(move_player.system().label("move_player"))
+                .with_system(is_player_dead_checks.system().after("move_player")),
+        )
         .add_system_set(SystemSet::on_exit(GameState::Playing).with_system(remove_player.system()));
     }
 }
@@ -46,9 +53,11 @@ fn spawn_player(
     println!("Spawning player");
 
     let ship = PlayerShip {
+        is_dead: false,
         speed: 150.,
-        target_left: -32.,
-        target_right: 32.,
+        // max_separation: 3. * game_map.sprite_size,
+        target_left: -game_map.sprite_size,
+        target_right: game_map.sprite_size,
     };
 
     commands.insert_resource(ship);
@@ -105,6 +114,11 @@ fn move_player(
     mut ship: ResMut<PlayerShip>,
     mut ship_side_tx_query: Query<(&mut Transform, &PlayerShipSide)>,
 ) {
+    // if we don't have a player, don't move
+    if ship.is_dead {
+        return;
+    }
+
     ship.target_left = ship.target_left + (actions.player_left_move as f32) * game_map.sprite_size;
     ship.target_right =
         ship.target_right + (actions.player_right_move as f32) * game_map.sprite_size;
@@ -143,6 +157,31 @@ fn get_ship_position(normalised_speed: f32, pos: &Vec3, target: f32) -> Vec3 {
             pos.y,
             pos.z,
         )
+    }
+}
+
+/// check if a player is ded
+pub fn is_player_dead_checks(
+    mut commands: Commands,
+    game_map: Res<GameMap>,
+    mut ship: ResMut<PlayerShip>,
+    players: Query<Entity, (With<Player>, Without<IsDead>)>,
+    ship_side_tx_query: Query<&Transform, With<PlayerShipSide>>,
+) {
+    match players.single() {
+        Ok(player) => {
+            // first check if the players bash into each other
+            let diff = ship_side_tx_query
+                .iter()
+                .fold(0., |acc, tx| tx.translation.x - acc);
+
+            if diff.abs() < game_map.sprite_size {
+                println!("Bashed into each other!");
+                ship.is_dead = true;
+                commands.entity(player).insert(IsDead);
+            }
+        }
+        Err(_) => {}
     }
 }
 
