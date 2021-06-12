@@ -210,8 +210,12 @@ pub fn is_player_dead_checks(
                 .iter()
                 .fold(0., |acc, tx| tx.translation.x - acc);
 
-            if diff.abs() < game_map.sprite_size * 0.9 {
+            if diff.abs() < game_map.sprite_size * 0.75 {
                 println!("Bashed into each other!");
+                ship.is_dead = true;
+                commands.entity(player).insert(IsDead);
+            } else if ship.separation_strain > 3. {
+                println!("Tether broke!");
                 ship.is_dead = true;
                 commands.entity(player).insert(IsDead);
             }
