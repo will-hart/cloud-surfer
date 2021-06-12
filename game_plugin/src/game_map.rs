@@ -12,7 +12,7 @@ impl Default for GameMap {
             width: 16.,
             height: 16.,
             pad_x: 3.,
-            pad_y: 1.,
+            pad_y: 3.,
             sprite_size: 32.,
         }
     }

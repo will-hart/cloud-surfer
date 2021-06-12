@@ -1,8 +1,10 @@
+use bevy::prelude::*;
+use bevy_prototype_debug_lines::*;
+
 use crate::actions::Actions;
 use crate::game_map::GameMap;
 use crate::loading::TextureAssets;
 use crate::GameState;
-use bevy::prelude::*;
 
 pub struct PlayerPlugin;
 
@@ -14,7 +16,10 @@ pub struct IsDead;
 pub struct PlayerShip {
     pub is_dead: bool,
     pub speed: f32,
-    // TODO: stop movement when the ships are too far apart: pub max_separation: f32,
+
+    pub max_separation: f32,
+    pub separation_strain: f32,
+
     pub target_left: f32,
     pub target_right: f32,
 }
@@ -26,17 +31,21 @@ pub enum PlayerShipSide {
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_system_set(
-            SystemSet::on_enter(GameState::Playing)
-                .with_system(spawn_player.system())
-                .with_system(spawn_camera.system()),
-        )
-        .add_system_set(
-            SystemSet::on_update(GameState::Playing)
-                .with_system(move_player.system().label("move_player"))
-                .with_system(is_player_dead_checks.system().after("move_player")),
-        )
-        .add_system_set(SystemSet::on_exit(GameState::Playing).with_system(despawn_level.system()));
+        app.add_plugin(DebugLinesPlugin)
+            .add_system_set(
+                SystemSet::on_enter(GameState::Playing)
+                    .with_system(spawn_player.system())
+                    .with_system(spawn_camera.system()),
+            )
+            .add_system_set(
+                SystemSet::on_update(GameState::Playing)
+                    .with_system(move_player.system().label("move_player"))
+                    .with_system(is_player_dead_checks.system().after("move_player"))
+                    .with_system(draw_rope.system().after("move_player")),
+            )
+            .add_system_set(
+                SystemSet::on_exit(GameState::Playing).with_system(despawn_level.system()),
+            );
     }
 }
 
@@ -55,7 +64,10 @@ fn spawn_player(
     let ship = PlayerShip {
         is_dead: false,
         speed: 150.,
-        // max_separation: 3. * game_map.sprite_size,
+
+        max_separation: 3. * game_map.sprite_size,
+        separation_strain: 0.,
+
         target_left: -game_map.sprite_size,
         target_right: game_map.sprite_size,
     };
@@ -123,7 +135,8 @@ fn move_player(
     ship.target_right =
         ship.target_right + (actions.player_right_move as f32) * game_map.sprite_size;
 
-    // update the ship side positions
+    // update the ship side positions - remember that there is a rope connecting them, so we must also calculate
+    // the total applied movement and update the strain on the rope
     let elapsed = time.delta_seconds();
     for (mut tx, side) in ship_side_tx_query.iter_mut() {
         tx.translation = match side {
@@ -185,8 +198,41 @@ pub fn is_player_dead_checks(
     }
 }
 
+/// Despawns the player and related objects
 fn despawn_level(mut commands: Commands, players: Query<Entity, With<Player>>) {
     for player in players.iter() {
         commands.entity(player).despawn_recursive();
     }
+}
+
+/// Debug draws a "rope" between the two ships
+fn draw_rope(
+    ship: Res<PlayerShip>,
+    mut lines: ResMut<DebugLines>,
+    mut ship_sides: Query<&Transform, With<PlayerShipSide>>,
+) {
+    let mut sides = ship_sides
+        .iter_mut()
+        .map(|tx| tx.translation.clone())
+        .collect::<Vec<_>>();
+
+    sides.sort_by_key(|s| (s.x * 1000.) as i32);
+
+    // use trig to calculate the position of an isoceles triangle with the two ships forming
+    // the base and the rope "drooping" down between them. Assuming symmetry and breaking into
+    //  two right triangles, the hypoteneuse is the max_separation / 2, the base is half the distance
+    // between the two ships and the "droop height" can be determined using pythagoras' theorem b^2 = c^2 - a^2
+    let dx = sides.iter().fold(0., |acc, tx| tx.x - acc);
+    let rope_len = ship.max_separation;
+
+    let c = rope_len / 2.;
+    let a = dx / 2.;
+    let b = (c * c - a * a).sqrt();
+
+    let mid_point = Vec3::new(sides[0].x + a, sides[0].y - b, sides[0].z);
+
+    // draw the lines
+    sides
+        .iter()
+        .for_each(|ship_pos| lines.line_colored(ship_pos.clone(), mid_point, 0., Color::BLACK));
 }
