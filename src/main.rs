@@ -6,19 +6,23 @@ use bevy_webgl2;
 
 use bevy::prelude::{App, ClearColor, Color, WindowDescriptor};
 use bevy::DefaultPlugins;
+use game_plugin::game_map::GameMap;
 use game_plugin::GamePlugin;
 
 fn main() {
+    let game_map = GameMap::default();
+
     let mut app = App::build();
     app
         // .insert_resource(Msaa { samples: 4 })
         .insert_resource(ClearColor(Color::rgb(0.4, 0.4, 0.4)))
         .insert_resource(WindowDescriptor {
-            width: 800.,
-            height: 600.,
+            width: (game_map.width + 2 * game_map.pad_x) as f32 * game_map.sprite_size,
+            height: (game_map.height + 2 * game_map.pad_y) as f32 * game_map.sprite_size,
             title: "Cloud Surfer".to_string(),
             ..Default::default()
         })
+        .insert_resource(game_map)
         .add_plugins(DefaultPlugins)
         .add_plugin(GamePlugin);
 

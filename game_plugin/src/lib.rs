@@ -1,5 +1,6 @@
 mod actions;
 mod audio;
+pub mod game_map;
 mod loading;
 mod menu;
 mod player;
