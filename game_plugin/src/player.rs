@@ -187,21 +187,8 @@ pub fn is_player_dead_checks(
     }
 }
 
-fn despawn_level(
-    mut commands: Commands,
-    players: Query<Entity, With<Player>>,
-    spawn_timers: Query<Entity, With<SpawnTimer>>,
-    obstacles: Query<Entity, With<Obstacle>>,
-) {
+fn despawn_level(mut commands: Commands, players: Query<Entity, With<Player>>) {
     for player in players.iter() {
         commands.entity(player).despawn_recursive();
-    }
-
-    for timer in spawn_timers.iter() {
-        commands.entity(timer).despawn();
-    }
-
-    for obstacle in obstacles.iter() {
-        commands.entity(obstacle).despawn();
     }
 }

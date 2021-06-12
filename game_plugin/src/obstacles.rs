@@ -51,12 +51,15 @@ impl Plugin for ObstaclePlugin {
                             .after("move_obstacles"),
                     )
                     .with_system(remove_dead_obstacles.system().after("move_obstacles")),
+            )
+            .add_system_set(
+                SystemSet::on_exit(GameState::Playing).with_system(despawn_obstacles.system()),
             );
     }
 }
 
 /// Starts the obstacle spawn timer
-pub fn setup_obstacle_spawning(mut commands: Commands) {
+fn setup_obstacle_spawning(mut commands: Commands) {
     commands
         .spawn()
         .insert(SpawnTimer)
@@ -64,7 +67,7 @@ pub fn setup_obstacle_spawning(mut commands: Commands) {
 }
 
 /// Spawns obstacles at the top of the screen
-pub fn spawn_obstacles(
+fn spawn_obstacles(
     mut commands: Commands,
     time: Res<Time>,
     textures: Res<TextureAssets>,
@@ -101,7 +104,7 @@ pub fn spawn_obstacles(
 }
 
 /// Moves the obstacles down towards the player
-pub fn move_obstacles(
+fn move_obstacles(
     time: Res<Time>,
     ship: Res<PlayerShip>,
     mut obstacles: Query<&mut Transform, With<Obstacle>>,
@@ -117,7 +120,7 @@ pub fn move_obstacles(
 }
 
 /// Compares player and ship positions and kills the ship if it hits an obstacle
-pub fn check_for_obstacle_collisions(
+fn check_for_obstacle_collisions(
     mut commands: Commands,
     game_map: Res<GameMap>,
     mut ship: ResMut<PlayerShip>,
@@ -150,7 +153,7 @@ pub fn check_for_obstacle_collisions(
 }
 
 /// removes dead obstacles that are off the map
-pub fn remove_dead_obstacles(
+fn remove_dead_obstacles(
     game_map: Res<GameMap>,
     mut commands: Commands,
     mut obstacles: Query<(&mut Transform, Entity), With<Obstacle>>,
@@ -162,5 +165,20 @@ pub fn remove_dead_obstacles(
             println!("Destroying obstacle");
             commands.entity(entity).despawn();
         }
+    }
+}
+
+/// despawns all obstacles and the spawn timer
+fn despawn_obstacles(
+    mut commands: Commands,
+    obstacles: Query<Entity, With<Obstacle>>,
+    spawn_timers: Query<Entity, With<SpawnTimer>>,
+) {
+    for timer in spawn_timers.iter() {
+        commands.entity(timer).despawn();
+    }
+
+    for obstacle in obstacles.iter() {
+        commands.entity(obstacle).despawn();
     }
 }
