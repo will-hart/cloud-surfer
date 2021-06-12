@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use rand::{thread_rng, Rng};
 
 use crate::{
     game_map::GameMap,
@@ -78,12 +79,15 @@ pub fn spawn_obstacles(
         return;
     }
 
+    let mut rng = thread_rng();
+    let x_extents = -(game_map.width / 2.)..=(game_map.width / 2.);
+
     println!("Spawning obstacle");
     commands
         .spawn_bundle(SpriteBundle {
             material: materials.add(textures.cloud_001.clone().into()),
             transform: Transform::from_translation(Vec3::new(
-                0.,
+                rng.gen_range(x_extents).floor() * game_map.sprite_size,
                 game_map.top_y() + game_map.pad_y * 3. * game_map.sprite_size, // spawn out of sight
                 1.,
             )),
