@@ -1,6 +1,8 @@
 use crate::actions::Actions;
 use crate::game_map::GameMap;
 use crate::loading::TextureAssets;
+use crate::obstacles::Obstacle;
+use crate::obstacles::SpawnTimer;
 use crate::GameState;
 use bevy::prelude::*;
 
@@ -36,7 +38,7 @@ impl Plugin for PlayerPlugin {
                 .with_system(move_player.system().label("move_player"))
                 .with_system(is_player_dead_checks.system().after("move_player")),
         )
-        .add_system_set(SystemSet::on_exit(GameState::Playing).with_system(remove_player.system()));
+        .add_system_set(SystemSet::on_exit(GameState::Playing).with_system(despawn_level.system()));
     }
 }
 
@@ -185,8 +187,21 @@ pub fn is_player_dead_checks(
     }
 }
 
-fn remove_player(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
-    for player in player_query.iter() {
-        commands.entity(player).despawn();
+fn despawn_level(
+    mut commands: Commands,
+    players: Query<Entity, With<Player>>,
+    spawn_timers: Query<Entity, With<SpawnTimer>>,
+    obstacles: Query<Entity, With<Obstacle>>,
+) {
+    for player in players.iter() {
+        commands.entity(player).despawn_recursive();
+    }
+
+    for timer in spawn_timers.iter() {
+        commands.entity(timer).despawn();
+    }
+
+    for obstacle in obstacles.iter() {
+        commands.entity(obstacle).despawn();
     }
 }
