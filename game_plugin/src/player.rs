@@ -12,11 +12,8 @@ pub struct Player;
 pub struct PlayerShip {
     pub speed: f32,
 
-    pub left: u8,
-    pub right: u8,
-
-    pub target_left: u8,
-    pub target_right: u8,
+    pub target_left: f32,
+    pub target_right: f32,
 }
 
 pub enum PlayerShipSide {
@@ -50,10 +47,8 @@ fn spawn_player(
 
     let ship = PlayerShip {
         speed: 150.,
-        left: 3,
-        right: 4,
-        target_left: 3,
-        target_right: 4,
+        target_left: -32.,
+        target_right: 32.,
     };
 
     commands.insert_resource(ship);
@@ -69,7 +64,7 @@ fn spawn_player(
                     SpriteBundle {
                         material: materials.add(textures.player_left.clone().into()),
                         transform: Transform::from_translation(Vec3::new(
-                            game_map.idx_to_x(ship.left),
+                            ship.target_left,
                             game_map.bottom_y(),
                             1.,
                         )),
@@ -87,7 +82,7 @@ fn spawn_player(
                     SpriteBundle {
                         material: materials.add(textures.player_right.clone().into()),
                         transform: Transform::from_translation(Vec3::new(
-                            game_map.idx_to_x(ship.right),
+                            ship.target_right,
                             game_map.bottom_y(),
                             1.,
                         )),
@@ -102,6 +97,7 @@ fn spawn_player(
         });
 }
 
+/// Moves a player based on input towards their target position
 fn move_player(
     time: Res<Time>,
     actions: Res<Actions>,
@@ -109,57 +105,43 @@ fn move_player(
     mut ship: ResMut<PlayerShip>,
     mut ship_side_tx_query: Query<(&mut Transform, &PlayerShipSide)>,
 ) {
-    ship.target_left = (ship.target_left as i8 + actions.player_left_move)
-        .clamp(0, game_map.width as i8 - 1) as u8;
-    ship.target_right = (ship.target_right as i8 + actions.player_right_move)
-        .clamp(0, game_map.width as i8 - 1) as u8;
+    ship.target_left = ship.target_left + (actions.player_left_move as f32) * game_map.sprite_size;
+    ship.target_right =
+        ship.target_right + (actions.player_right_move as f32) * game_map.sprite_size;
 
     // update the ship side positions
     let elapsed = time.delta_seconds();
     for (mut tx, side) in ship_side_tx_query.iter_mut() {
         tx.translation = match side {
-            PlayerShipSide::Left => get_ship_position(
-                &game_map,
-                elapsed * ship.speed,
-                &tx.translation,
-                ship.left,
-                ship.target_left,
-            ),
-            PlayerShipSide::Right => get_ship_position(
-                &game_map,
-                elapsed * ship.speed,
-                &tx.translation,
-                ship.right,
-                ship.target_right,
-            ),
+            PlayerShipSide::Left => {
+                get_ship_position(elapsed * ship.speed, &tx.translation, ship.target_left)
+            }
+            PlayerShipSide::Right => {
+                get_ship_position(elapsed * ship.speed, &tx.translation, ship.target_right)
+            }
         };
     }
 }
 
-fn get_ship_position(
-    game_map: &Res<GameMap>,
-    normalised_speed: f32,
-    translation: &Vec3,
-    pos: u8,
-    target: u8,
-) -> Vec3 {
-    if pos == target {
+/// Helper function which moves a ship towards its target position
+fn get_ship_position(normalised_speed: f32, pos: &Vec3, target: f32) -> Vec3 {
+    if pos.x == target {
         // in position
-        translation.clone()
+        pos.clone()
     } else {
         // move the ship towards its preferred location
-        let delta_x = game_map.idx_to_x(target) - translation.x;
+        let delta_x = target - pos.x;
         let max_move = delta_x.signum() * normalised_speed;
 
         Vec3::new(
-            translation.x
+            pos.x
                 + if delta_x < 0. {
                     delta_x.clamp(max_move, 0.)
                 } else {
                     delta_x.clamp(0., max_move)
                 },
-            translation.y,
-            translation.z,
+            pos.y,
+            pos.z,
         )
     }
 }
