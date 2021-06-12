@@ -180,12 +180,12 @@ fn move_player(
         move_deltas
             .0
             .abs()
-            .clamp(0., move_deltas.0 * ship.speed * time.delta_seconds())
+            .clamp(0., move_deltas.0.abs() * ship.speed * time.delta_seconds())
             * move_signs.0,
         move_deltas
             .1
             .abs()
-            .clamp(0., move_deltas.1 * ship.speed * time.delta_seconds())
+            .clamp(0., move_deltas.1.abs() * ship.speed * time.delta_seconds())
             * move_signs.1,
     );
 
