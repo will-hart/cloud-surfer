@@ -1,8 +1,6 @@
 use crate::actions::Actions;
 use crate::game_map::GameMap;
 use crate::loading::TextureAssets;
-use crate::obstacles::Obstacle;
-use crate::obstacles::SpawnTimer;
 use crate::GameState;
 use bevy::prelude::*;
 
