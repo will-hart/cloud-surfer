@@ -153,18 +153,41 @@ fn move_player(
         return;
     }
 
+    // update the target movement positions
     ship.target_left = ship.target_left + (actions.player_left_move as f32) * game_map.sprite_size;
     ship.target_right =
         ship.target_right + (actions.player_right_move as f32) * game_map.sprite_size;
 
-    // check the current difference between the two ships
-    // TODO this is reused in multiple places, make it a helper function
-    let mut sides = ship_sides
+    // check the current x-difference between the two ships
+    let positions = ship_sides
         .iter_mut()
-        .map(|(tx, _)| tx.translation.clone())
-        .collect::<Vec<_>>();
-    sides.sort_by_key(|s| (s.x * 1000.) as i32);
-    let dx = sides.iter().fold(0., |acc, tx| tx.x - acc);
+        .fold((Vec3::ZERO, Vec3::ZERO), |acc, (tx, side)| match side {
+            PlayerShipSide::Left => (tx.translation.clone(), acc.1),
+            PlayerShipSide::Right => (acc.0, tx.translation.clone()),
+        });
+    let dx = positions.1.x - positions.0.x;
+
+    // calculate the desired movement per ship
+
+    let move_deltas = (
+        ship.target_left - positions.0.x,
+        ship.target_right - positions.1.x,
+    );
+
+    let move_signs = (move_deltas.0.signum(), move_deltas.1.signum());
+
+    let mut move_inputs = (
+        move_deltas
+            .0
+            .abs()
+            .clamp(0., move_deltas.0 * ship.speed * time.delta_seconds())
+            * move_signs.0,
+        move_deltas
+            .1
+            .abs()
+            .clamp(0., move_deltas.1 * ship.speed * time.delta_seconds())
+            * move_signs.1,
+    );
 
     // this is going to be a bit of a mouthful. Essentially what we want to do is tether the two
     // ships together. So prevent them moving more than ship.max_separation apart, and let ships
@@ -172,57 +195,41 @@ fn move_player(
     // If the ships are at max separation, then we need to start increasing the strain on the tether.
     // (overstraining the tether is a loss condition).
 
+    let (lm, rm) = move_inputs;
+
+    let approx_zero = 0.0001;
+
     // condition 1: both ships are within max separation distance and can move freely,
-    //              OR ships are at max separation distance but moving together
-    if dx < ship.max_separation
-        || (actions.player_left_move == -actions.player_right_move
-            && actions.player_right_move != 0)
-    {
-        // move normally
+    //              OR ships are at max separation distance but moving together or not moving
+    if dx < ship.max_separation || (lm - rm).abs() < approx_zero {
+        // do not modify movement inputs
     } else {
-        // condition 2: ships are at max separation distance and not moving together
-        //   -> 2a: ships are not moving, do nothin
-        //   -> 2b: one ship is moving, drag the other ship
-        //   -> 2c: both ships are moving. If they're moving apart, stop them and increase strain
+        // condition 2: ships are at max separation and have different movement values
+        //              either one is stationary and one moving, or they're moving in opposite directions
+
+        // condition 2a, the signs are not matched (trying to move in opposite directions)
+        if lm.signum() != rm.signum() {
+            // movement is blocked
+            move_inputs = (0., 0.);
+        } else {
+            // condition 2b: only one is moving, apply movement to both
+            // apply the "largest" movement to both ships
+            if move_inputs.0.abs() > move_inputs.1.abs() {
+                move_inputs = (move_inputs.0, move_inputs.0);
+            } else {
+                move_inputs = (move_inputs.1, move_inputs.1);
+            }
+        }
     }
 
-    // // update the ship side positions - remember that there is a rope connecting them, so we must also calculate
-    // // the total applied movement and update the strain on the rope
-    // let elapsed = time.delta_seconds();
-    // for (mut tx, side) in ship_sides.iter_mut() {
-    //     tx.translation = match side {
-    //         PlayerShipSide::Left => {
-    //             get_ship_position(elapsed * ship.speed, &tx.translation, ship.target_left)
-    //         }
-    //         PlayerShipSide::Right => {
-    //             get_ship_position(elapsed * ship.speed, &tx.translation, ship.target_right)
-    //         }
-    //     };
-    // }
+    // now apply the movement
+    for (mut tx, side) in ship_sides.iter_mut() {
+        match side {
+            PlayerShipSide::Left => tx.translation.x += move_inputs.0,
+            PlayerShipSide::Right => tx.translation.x += move_inputs.1,
+        }
+    }
 }
-
-// /// Helper function which moves a ship towards its target position
-// fn get_ship_position(normalised_speed: f32, pos: &Vec3, target: f32) -> Vec3 {
-//     if pos.x == target {
-//         // in position
-//         pos.clone()
-//     } else {
-//         // move the ship towards its preferred location
-//         let delta_x = target - pos.x;
-//         let max_move = delta_x.signum() * normalised_speed;
-
-//         Vec3::new(
-//             pos.x
-//                 + if delta_x < 0. {
-//                     delta_x.clamp(max_move, 0.)
-//                 } else {
-//                     delta_x.clamp(0., max_move)
-//                 },
-//             pos.y,
-//             pos.z,
-//         )
-//     }
-// }
 
 /// check if a player is ded
 pub fn is_player_dead_checks(
