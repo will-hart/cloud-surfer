@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_prototype_debug_lines::*;
 
 use crate::actions::Actions;
 use crate::game_map::GameMap;
@@ -11,6 +10,8 @@ pub struct PlayerPlugin;
 pub struct Player;
 
 pub struct IsDead;
+
+pub struct Laser;
 
 #[derive(Debug, Copy, Clone)]
 pub struct PlayerShip {
@@ -31,21 +32,18 @@ pub enum PlayerShipSide {
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_plugin(DebugLinesPlugin)
-            .add_system_set(
-                SystemSet::on_enter(GameState::Playing)
-                    .with_system(spawn_player.system())
-                    .with_system(spawn_camera.system()),
-            )
-            .add_system_set(
-                SystemSet::on_update(GameState::Playing)
-                    .with_system(move_player.system().label("move_player"))
-                    .with_system(is_player_dead_checks.system().after("move_player"))
-                    .with_system(draw_rope.system().after("move_player")),
-            )
-            .add_system_set(
-                SystemSet::on_exit(GameState::Playing).with_system(despawn_level.system()),
-            );
+        app.add_system_set(
+            SystemSet::on_enter(GameState::Playing)
+                .with_system(spawn_player.system())
+                .with_system(spawn_camera.system()),
+        )
+        .add_system_set(
+            SystemSet::on_update(GameState::Playing)
+                .with_system(move_player.system().label("move_player"))
+                .with_system(is_player_dead_checks.system().after("move_player"))
+                .with_system(update_laser.system().after("move_player")),
+        )
+        .add_system_set(SystemSet::on_exit(GameState::Playing).with_system(despawn_level.system()));
     }
 }
 
@@ -57,6 +55,7 @@ fn spawn_player(
     mut commands: Commands,
     textures: Res<TextureAssets>,
     game_map: Res<GameMap>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     println!("Spawning player");
@@ -74,6 +73,7 @@ fn spawn_player(
 
     commands.insert_resource(ship);
 
+    // spawn the player + player ships
     commands
         .spawn()
         .insert(Transform::from_translation(Vec3::ZERO))
@@ -116,6 +116,28 @@ fn spawn_player(
                 })
                 .insert(PlayerShipSide::Right);
         });
+
+    // spawn the laser texture atlas
+    let texture_atlas = TextureAtlas::from_grid(textures.laser.clone(), Vec2::new(32., 16.0), 3, 1);
+    let texture_atlas_handle = texture_atlases.add(texture_atlas);
+
+    // spawn the laser between the two ships
+    let mut laser_tx = Transform::from_translation(Vec3::new(
+        (ship.target_left + ship.target_right) / 2.,
+        game_map.bottom_y(),
+        0.5,
+    ));
+
+    laser_tx.scale.x = 1.4;
+
+    commands
+        .spawn_bundle(SpriteSheetBundle {
+            texture_atlas: texture_atlas_handle,
+            transform: laser_tx,
+            ..Default::default()
+        })
+        .insert(Laser)
+        .insert(Timer::from_seconds(0.2, true));
 }
 
 /// Moves a player based on input towards their target position
@@ -198,19 +220,18 @@ pub fn is_player_dead_checks(
     }
 }
 
-/// Despawns the player and related objects
-fn despawn_level(mut commands: Commands, players: Query<Entity, With<Player>>) {
-    for player in players.iter() {
-        commands.entity(player).despawn_recursive();
-    }
-}
-
-/// Debug draws a "rope" between the two ships
-fn draw_rope(
+/// Draws and animates "laser" between the two ships
+fn update_laser(
+    time: Res<Time>,
+    game_map: Res<GameMap>,
     ship: Res<PlayerShip>,
-    mut lines: ResMut<DebugLines>,
-    mut ship_sides: Query<&Transform, With<PlayerShipSide>>,
+    mut lasers: Query<(&mut Transform, &mut TextureAtlasSprite, &mut Timer), With<Laser>>,
+    mut ship_sides: Query<&Transform, (With<PlayerShipSide>, Without<Laser>)>,
 ) {
+    if ship.is_dead {
+        return;
+    }
+
     let mut sides = ship_sides
         .iter_mut()
         .map(|tx| tx.translation.clone())
@@ -218,21 +239,36 @@ fn draw_rope(
 
     sides.sort_by_key(|s| (s.x * 1000.) as i32);
 
-    // use trig to calculate the position of an isoceles triangle with the two ships forming
-    // the base and the rope "drooping" down between them. Assuming symmetry and breaking into
-    //  two right triangles, the hypoteneuse is the max_separation / 2, the base is half the distance
-    // between the two ships and the "droop height" can be determined using pythagoras' theorem b^2 = c^2 - a^2
+    // stretch the laser to fit between the two sides
     let dx = sides.iter().fold(0., |acc, tx| tx.x - acc);
-    let rope_len = ship.max_separation;
+    let x_scale = 0.4 + dx / game_map.sprite_size;
 
-    let c = rope_len / 2.;
-    let a = dx / 2.;
-    let b = (c * c - a * a).sqrt();
+    for (mut laser, mut sprite, mut timer) in lasers.iter_mut() {
+        // reposition the laser
+        laser.scale.x = x_scale;
+        laser.translation.x = sides[0].x + dx / 2.;
 
-    let mid_point = Vec3::new(sides[0].x + a, sides[0].y - b, sides[0].z);
+        // update the animation frame for the laser
+        // show flickering if stress > 0.5
+        timer.tick(time.delta());
+        if timer.just_finished() {
+            let frame_count = if ship.separation_strain > 0.5 { 3 } else { 2 };
+            sprite.index = (sprite.index + 1) % frame_count;
+        }
+    }
+}
 
-    // draw the lines
-    sides
-        .iter()
-        .for_each(|ship_pos| lines.line_colored(ship_pos.clone(), mid_point, 0., Color::BLACK));
+/// Despawns the player and related objects
+fn despawn_level(
+    mut commands: Commands,
+    players: Query<Entity, With<Player>>,
+    lasers: Query<Entity, With<Laser>>,
+) {
+    for player in players.iter() {
+        commands.entity(player).despawn_recursive();
+    }
+
+    for laser in lasers.iter() {
+        commands.entity(laser).despawn_recursive();
+    }
 }

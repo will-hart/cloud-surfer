@@ -35,6 +35,7 @@ pub struct TextureAssets {
     pub cloud_001: Handle<Texture>,
     pub player_left: Handle<Texture>,
     pub player_right: Handle<Texture>,
+    pub laser: Handle<Texture>,
 }
 
 fn start_loading(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -48,6 +49,7 @@ fn start_loading(mut commands: Commands, asset_server: Res<AssetServer>) {
     textures.push(asset_server.load_untyped(PATHS.cloud_001));
     textures.push(asset_server.load_untyped(PATHS.player_left));
     textures.push(asset_server.load_untyped(PATHS.player_right));
+    textures.push(asset_server.load_untyped(PATHS.laser));
 
     commands.insert_resource(LoadingState {
         textures,
@@ -90,6 +92,7 @@ fn check_state(
         cloud_001: asset_server.get_handle(PATHS.cloud_001),
         player_left: asset_server.get_handle(PATHS.player_left),
         player_right: asset_server.get_handle(PATHS.player_right),
+        laser: asset_server.get_handle(PATHS.laser),
     });
 
     state.set(GameState::Menu).unwrap();

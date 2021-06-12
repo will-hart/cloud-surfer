@@ -4,6 +4,7 @@ pub struct AssetPaths {
     pub cloud_001: &'static str,
     pub player_left: &'static str,
     pub player_right: &'static str,
+    pub laser: &'static str,
 }
 
 pub const PATHS: AssetPaths = AssetPaths {
@@ -12,4 +13,5 @@ pub const PATHS: AssetPaths = AssetPaths {
     cloud_001: "textures/cloud_001.png",
     player_left: "textures/player_left.png",
     player_right: "textures/player_right.png",
+    laser: "textures/laser.png",
 };

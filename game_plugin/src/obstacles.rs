@@ -70,12 +70,17 @@ fn setup_obstacle_spawning(mut commands: Commands) {
 fn spawn_obstacles(
     mut commands: Commands,
     time: Res<Time>,
+    ship: Res<PlayerShip>,
     textures: Res<TextureAssets>,
     game_map: Res<GameMap>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut timers: Query<&mut Timer, With<SpawnTimer>>,
     _patterns: Res<AvailableSpawnPatterns>,
 ) {
+    if ship.is_dead {
+        return;
+    }
+
     let mut timer = timers.single_mut().unwrap();
     timer.tick(time.delta());
     if !timer.just_finished() {
