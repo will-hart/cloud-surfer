@@ -29,11 +29,11 @@ fn set_movement_actions(mut actions: ResMut<Actions>, keyboard_input: Res<Input<
         actions.player_left_move += 1;
     }
 
-    if keyboard_input.just_pressed(KeyCode::Left) {
+    if keyboard_input.just_pressed(KeyCode::J) {
         actions.player_right_move -= 1;
     }
 
-    if keyboard_input.just_pressed(KeyCode::Right) {
+    if keyboard_input.just_pressed(KeyCode::L) {
         actions.player_right_move += 1;
     }
 }
