@@ -34,10 +34,5 @@ You should checkout the [bevy website][bevy] for [links to resources][bevy-learn
 
 # License
 
-This project is licensed under [CC0 1.0 Universal](LICENSE) except some content of `assets` and the Bevy icons in the `build` directory (see [Credits](credits/CREDITS.md)). Go crazy and feel free to show me whatever you build with this ([@nikl_me][nikl-twitter]).
-
-[bevy]: https://bevyengine.org/
-[bevy-learn]: https://bevyengine.org/learn/
-[bevy-discord]: https://discord.gg/bevy
-[nikl-twitter]: https://twitter.com/nikl_me
-[firefox-sound-issue]: https://github.com/NiklasEi/bevy_kira_audio/issues/9
+This project is licensed under dual MIT / Apache. The template used is
+https://github.com/NiklasEi/bevy_game_template which is CC0-1.0 licensed.

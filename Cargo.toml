@@ -1,8 +1,8 @@
 [package]
-name = "bevy_game" # ToDo
+name = "cloud_surfer"
 version = "0.1.0"
 publish = false
-authors = ["Niklas Eicker <git@nikl.me>"] # ToDo: you are the author ;)
+authors = ["William Hart <hart.wl@gmail.com>"]
 edition = "2018"
 
 [profile.dev]
@@ -27,7 +27,7 @@ web = [
 ]
 
 dev = [
-    "bevy/dynamic",
+    # "bevy/dynamic",
     "native",
 ]
 
