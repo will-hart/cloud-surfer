@@ -5,6 +5,7 @@ mod loading;
 mod menu;
 mod obstacles;
 mod player;
+mod score;
 
 use crate::actions::ActionsPlugin;
 use crate::audio::InternalAudioPlugin;
@@ -12,6 +13,7 @@ use crate::loading::LoadingPlugin;
 use crate::menu::MenuPlugin;
 use crate::obstacles::ObstaclePlugin;
 use crate::player::PlayerPlugin;
+use crate::score::ScorePlugin;
 
 use bevy::app::AppBuilder;
 // use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
@@ -35,6 +37,7 @@ impl Plugin for GamePlugin {
             .add_plugin(InternalAudioPlugin)
             .add_plugin(PlayerPlugin)
             .add_plugin(ObstaclePlugin)
+            .add_plugin(ScorePlugin)
             // .add_plugin(FrameTimeDiagnosticsPlugin::default())
             // .add_plugin(LogDiagnosticsPlugin::default())
             ;
