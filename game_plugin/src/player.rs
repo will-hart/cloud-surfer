@@ -171,7 +171,7 @@ fn move_player(
     let x_bound = game_map.get_x_bound();
     let target_x = (
         (sides.0.x + (moves.0 as f32) * delta_move).clamp(-x_bound, x_bound),
-        sides.1.x + (moves.1 as f32) * delta_move.clamp(-x_bound, x_bound),
+        (sides.1.x + (moves.1 as f32) * delta_move).clamp(-x_bound, x_bound),
     );
 
     let rotations = (
