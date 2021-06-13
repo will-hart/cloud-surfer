@@ -34,6 +34,39 @@ impl AvailableSpawnPatterns {
                     offsets: vec![Vec2::new(-1., 0.), Vec2::ZERO, Vec2::new(1., 0.)],
                     min_score: -1.,
                 },
+                SpawnPattern {
+                    offsets: vec![
+                        Vec2::new(-2., 0.),
+                        Vec2::new(-1., 0.),
+                        Vec2::ZERO,
+                        Vec2::new(1., 0.),
+                        Vec2::new(2., 0.),
+                    ],
+                    min_score: 50.,
+                },
+                SpawnPattern {
+                    offsets: vec![
+                        Vec2::new(-2., 0.),
+                        Vec2::ZERO,
+                        Vec2::new(1., 0.),
+                        Vec2::new(2., 0.),
+                    ],
+                    min_score: 60.,
+                },
+                SpawnPattern {
+                    offsets: vec![Vec2::new(-2., -2.), Vec2::ZERO, Vec2::new(2., 2.)],
+                    min_score: 30.,
+                },
+                SpawnPattern {
+                    offsets: vec![
+                        Vec2::new(-4., 0.),
+                        Vec2::new(-2., 0.),
+                        Vec2::ZERO,
+                        Vec2::new(2., 0.),
+                        Vec2::new(4., 0.),
+                    ],
+                    min_score: 100.,
+                },
             ],
         }
     }
