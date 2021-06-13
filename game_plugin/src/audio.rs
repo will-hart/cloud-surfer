@@ -32,19 +32,12 @@ fn play_menu_music(
     audio: Res<Audio>,
     channels: Res<AudioChannels>,
 ) {
-    audio.stop_channel(&channels.music);
     audio.set_volume_in_channel(0.5, &channels.music);
-    audio.play_looped_in_channel(audio_assets.menu_music.clone(), &channels.music);
+    audio.play_looped_in_channel(audio_assets.music.clone(), &channels.music);
 }
 
-fn play_game_music(
-    audio_assets: Res<AudioAssets>,
-    audio: Res<Audio>,
-    channels: Res<AudioChannels>,
-) {
-    audio.set_volume_in_channel(0.4, &channels.music);
-    audio.stop_channel(&channels.music);
-    audio.play_looped_in_channel(audio_assets.music.clone(), &channels.music);
+fn play_game_music(audio: Res<Audio>, channels: Res<AudioChannels>) {
+    audio.set_volume_in_channel(0.3, &channels.music);
 }
 
 fn stop_game_music(audio: Res<Audio>, channels: Res<AudioChannels>) {
