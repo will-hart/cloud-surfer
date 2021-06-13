@@ -125,7 +125,7 @@ fn setup_menu(
                 },
                 text: Text {
                     sections: vec![TextSection {
-                        value: "or the tether will snap!".to_string(),
+                        value: "or the tether will snap! Avoid the boulders!".to_string(),
                         style: TextStyle {
                             font: asset_server.get_handle("fonts/FiraSans-Bold.ttf"),
                             font_size: 20.0,

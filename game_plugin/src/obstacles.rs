@@ -95,7 +95,7 @@ fn spawn_obstacles(
     game_map: Res<GameMap>,
     patterns: Res<AvailableSpawnPatterns>,
     score: Res<Score>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut timers: Query<&mut Timer, With<SpawnTimer>>,
 ) {
     if ship.is_dead {
@@ -126,12 +126,14 @@ fn spawn_obstacles(
     let spawn_pattern = spawn_patterns.choose(&mut rng).unwrap();
 
     println!("Spawning obstacle");
-    let material = materials.add(textures.cloud_001.clone().into());
+    let texture_atlas =
+        TextureAtlas::from_grid(textures.cloud_001.clone(), Vec2::new(32., 32.0), 4, 1);
+    let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
     for offset in spawn_pattern.offsets.iter() {
         commands
-            .spawn_bundle(SpriteBundle {
-                material: material.clone(),
+            .spawn_bundle(SpriteSheetBundle {
+                texture_atlas: texture_atlas_handle.clone(),
                 transform: Transform::from_translation(Vec3::new(
                     spawn_x + offset.x * game_map.sprite_size,
                     game_map.top_y()
@@ -139,12 +141,9 @@ fn spawn_obstacles(
                         + offset.y * game_map.sprite_size, // spawn out of sight
                     1.,
                 )),
-                sprite: Sprite {
-                    size: Vec2::new(32., 32.),
-                    ..Default::default()
-                },
                 ..Default::default()
             })
+            .insert(Timer::from_seconds(0.2, true))
             .insert(Obstacle);
     }
 }
@@ -158,7 +157,13 @@ fn move_obstacles(
     players: Query<Entity, (With<Player>, Without<IsDead>)>,
     ship_sides: Query<(&Transform, &PlayerShipSide), Without<Player>>,
     mut obstacles: Query<
-        (Entity, &mut Transform, &mut Visible),
+        (
+            Entity,
+            &mut Transform,
+            &mut Visible,
+            &mut Timer,
+            &mut TextureAtlasSprite,
+        ),
         (With<Obstacle>, Without<PlayerShipSide>, Without<Player>),
     >,
 ) {
@@ -172,7 +177,13 @@ fn move_obstacles(
     });
     let min_x_sep = 0.8 * game_map.sprite_size;
 
-    for (entity, mut tx, mut vis) in obstacles.iter_mut() {
+    for (entity, mut tx, mut vis, mut timer, mut sprite) in obstacles.iter_mut() {
+        // update the sprite
+        timer.tick(time.delta_duration);
+        if timer.just_finished() {
+            sprite.index = (sprite.index + 1) % 4;
+        }
+
         let before = tx.translation.y;
         let after = tx.translation.y - 150. * time.delta;
         tx.translation.y = after;
