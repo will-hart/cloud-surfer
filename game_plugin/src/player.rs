@@ -17,6 +17,8 @@ macro_rules! by_side {
     }};
 }
 
+const MAX_SEPARATION_STRAIN: f32 = 5.;
+
 pub struct PlayerPlugin;
 
 pub struct Player;
@@ -260,11 +262,11 @@ fn update_laser(
     // update separation strain
     if dx > ship.max_separation {
         // increase strain
-        ship.separation_strain += 0.3 * time.delta;
+        ship.separation_strain += time.delta;
     } else {
         // reduce strain
         if ship.separation_strain > 0. {
-            ship.separation_strain = (ship.separation_strain - time.delta).clamp(0., 1.);
+            ship.separation_strain = (ship.separation_strain - 0.75 * time.delta).max(0.);
         }
     }
 
@@ -278,9 +280,9 @@ fn update_laser(
         timer.tick(time.delta_duration);
         if timer.just_finished() {
             let frame_count = if dx > ship.max_separation {
-                if ship.separation_strain > 2. {
+                if ship.separation_strain > MAX_SEPARATION_STRAIN * 0.66 {
                     10
-                } else if ship.separation_strain > 1. {
+                } else if ship.separation_strain > MAX_SEPARATION_STRAIN * 0.33 {
                     5
                 } else {
                     3
