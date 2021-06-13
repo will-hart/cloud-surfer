@@ -31,7 +31,8 @@ impl GameMap {
 
     /// Get the maximum x-value in the positive x-direction (right side).
     /// The map is symmetrical so can negate this to find the left boundary.
+    /// NOTE: this boundary includes the x-padding
     pub fn get_x_bound(&self) -> f32 {
-        (self.width / 2.) * self.sprite_size
+        (self.pad_x + self.width / 2.) * self.sprite_size - (self.sprite_size / 2.)
     }
 }
