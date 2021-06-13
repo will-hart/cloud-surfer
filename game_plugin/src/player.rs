@@ -61,6 +61,7 @@ impl Plugin for PlayerPlugin {
                         .system()
                         .after(SystemLabels::MovePlayer),
                 )
+                .with_system(animate_player.system())
                 .with_system(update_laser.system().after(SystemLabels::MovePlayer)),
         )
         .add_system_set(SystemSet::on_exit(GameState::Playing).with_system(despawn_level.system()));
@@ -76,7 +77,6 @@ fn spawn_player(
     textures: Res<TextureAssets>,
     game_map: Res<GameMap>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     println!("Spawning player");
 
@@ -90,44 +90,44 @@ fn spawn_player(
 
     commands.insert_resource(ship);
 
-    // spawn the player + player ships
+    // spawn the player + tractors
     commands
         .spawn()
         .insert(Transform::from_translation(Vec3::ZERO))
         .insert(GlobalTransform::from_translation(Vec3::ZERO))
         .insert(Player)
         .with_children(|parent| {
+            let texture_atlas =
+                TextureAtlas::from_grid(textures.player_left.clone(), Vec2::new(32., 32.0), 4, 1);
+            let texture_atlas_handle = texture_atlases.add(texture_atlas);
+
             parent
                 .spawn_bundle({
-                    SpriteBundle {
-                        material: materials.add(textures.player_left.clone().into()),
+                    SpriteSheetBundle {
+                        texture_atlas: texture_atlas_handle,
                         transform: Transform::from_translation(Vec3::new(
                             -game_map.sprite_size / 2.,
                             game_map.bottom_y(),
                             1.,
                         )),
-                        sprite: Sprite {
-                            size: Vec2::new(32., 32.),
-                            ..Default::default()
-                        },
                         ..Default::default()
                     }
                 })
                 .insert(PlayerShipSide::Left);
 
+            let texture_atlas =
+                TextureAtlas::from_grid(textures.player_right.clone(), Vec2::new(32., 32.0), 4, 1);
+            let texture_atlas_handle = texture_atlases.add(texture_atlas);
+
             parent
                 .spawn_bundle({
-                    SpriteBundle {
-                        material: materials.add(textures.player_right.clone().into()),
+                    SpriteSheetBundle {
+                        texture_atlas: texture_atlas_handle,
                         transform: Transform::from_translation(Vec3::new(
                             game_map.sprite_size / 2.,
                             game_map.bottom_y(),
                             1.,
                         )),
-                        sprite: Sprite {
-                            size: Vec2::new(32., 32.),
-                            ..Default::default()
-                        },
                         ..Default::default()
                     }
                 })
@@ -238,6 +238,20 @@ pub fn is_player_dead_checks(
             }
         }
         Err(_) => {}
+    }
+}
+
+/// Animates the player sprites
+fn animate_player(
+    game_time: Res<GameTime>,
+    mut sprites: Query<&mut TextureAtlasSprite, With<PlayerShipSide>>,
+) {
+    if !game_time.fixed_update {
+        return;
+    }
+
+    for mut sprite in sprites.iter_mut() {
+        sprite.index = (sprite.index + 1) % 4;
     }
 }
 

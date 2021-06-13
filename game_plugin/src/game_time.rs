@@ -9,6 +9,8 @@ pub struct GameTime {
     pub elapsed: f32,
     pub delta: f32,
     pub delta_duration: Duration,
+    pub fixed_update: bool,
+    next_fixed_update: f64,
 }
 
 pub struct GameTimePlugin;
@@ -20,6 +22,8 @@ impl Plugin for GameTimePlugin {
             elapsed: 0.,
             delta: 0.,
             delta_duration: Duration::from_secs(0),
+            fixed_update: false,
+            next_fixed_update: 0.5,
         })
         .add_system_set(
             SystemSet::on_enter(GameState::Playing).with_system(setup_game_time.system()),
@@ -37,6 +41,8 @@ fn setup_game_time(mut game_time: ResMut<GameTime>) {
     game_time.elapsed = 0.;
     game_time.delta = 0.;
     game_time.delta_duration = Duration::from_secs(0);
+    game_time.fixed_update = false;
+    game_time.next_fixed_update = 0.5;
 }
 
 /// Updates the game timer
@@ -46,4 +52,11 @@ fn update_game_time(time: Res<Time>, mut game_time: ResMut<GameTime>) {
     game_time.elapsed += dt;
     game_time.delta = dt;
     game_time.delta_duration = time.delta().mul_f32(game_time.multiplier);
+
+    if time.seconds_since_startup() > game_time.next_fixed_update {
+        game_time.next_fixed_update = time.seconds_since_startup() + 0.1;
+        game_time.fixed_update = true;
+    } else {
+        game_time.fixed_update = false;
+    }
 }

@@ -8,6 +8,7 @@ mod menu;
 mod obstacles;
 mod player;
 mod score;
+mod scrolling_background;
 
 use crate::actions::ActionsPlugin;
 use crate::audio::InternalAudioPlugin;
@@ -18,6 +19,7 @@ use crate::menu::MenuPlugin;
 use crate::obstacles::ObstaclePlugin;
 use crate::player::PlayerPlugin;
 use crate::score::ScorePlugin;
+use crate::scrolling_background::ScrollingBackgroundPlugin;
 
 use bevy::app::AppBuilder;
 // use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
@@ -54,6 +56,7 @@ impl Plugin for GamePlugin {
             .add_plugin(ObstaclePlugin)
             .add_plugin(ScorePlugin)
             .add_plugin(GameOverPlugin)
+            .add_plugin(ScrollingBackgroundPlugin)
             // .add_plugin(FrameTimeDiagnosticsPlugin::default())
             // .add_plugin(LogDiagnosticsPlugin::default())
             ;
