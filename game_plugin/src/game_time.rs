@@ -4,6 +4,8 @@ use bevy::prelude::*;
 
 use crate::{GameState, SystemLabels};
 
+pub const GAME_TIME_DOUBLING_TIME: f32 = 60.; // e.g. 60 == double speed every minute
+
 pub struct GameTime {
     pub multiplier: f32,
     pub elapsed: f32,
@@ -30,7 +32,8 @@ impl Plugin for GameTimePlugin {
         )
         .add_system_set(
             SystemSet::on_update(GameState::Playing)
-                .with_system(update_game_time.system().label(SystemLabels::UpdateTime)),
+                .with_system(update_game_time.system().label(SystemLabels::UpdateTime))
+                .with_system(speed_up_game_over_time.system()),
         );
     }
 }
@@ -59,4 +62,8 @@ fn update_game_time(time: Res<Time>, mut game_time: ResMut<GameTime>) {
     } else {
         game_time.fixed_update = false;
     }
+}
+
+fn speed_up_game_over_time(mut game_time: ResMut<GameTime>) {
+    game_time.multiplier = 1. + game_time.elapsed / GAME_TIME_DOUBLING_TIME;
 }
