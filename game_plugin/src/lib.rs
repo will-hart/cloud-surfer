@@ -1,5 +1,6 @@
 mod actions;
 mod audio;
+mod audio_events;
 pub mod game_map;
 mod game_over_ui;
 mod game_time;
@@ -12,6 +13,7 @@ mod scrolling_background;
 
 use crate::actions::ActionsPlugin;
 use crate::audio::InternalAudioPlugin;
+use crate::audio_events::AudioEventsPlugin;
 use crate::game_over_ui::GameOverPlugin;
 use crate::game_time::GameTimePlugin;
 use crate::loading::LoadingPlugin;
@@ -57,6 +59,7 @@ impl Plugin for GamePlugin {
             .add_plugin(ScorePlugin)
             .add_plugin(GameOverPlugin)
             .add_plugin(ScrollingBackgroundPlugin)
+            .add_plugin(AudioEventsPlugin)
             // .add_plugin(FrameTimeDiagnosticsPlugin::default())
             // .add_plugin(LogDiagnosticsPlugin::default())
             ;
