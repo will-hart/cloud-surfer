@@ -1,15 +1,20 @@
 use bevy::prelude::*;
-use rand::{thread_rng, Rng};
+use rand::{seq::SliceRandom, thread_rng, Rng};
 
 use crate::{
     game_map::GameMap,
     loading::TextureAssets,
     player::{IsDead, Player, PlayerShip, PlayerShipSide},
+    score::Score,
     GameState,
 };
 
-/// Possible spawn patterns for obstacles, uses a "phone pad grid" to specify positions
-pub struct SpawnPattern(Vec<u8>);
+/// Possible spawn patterns for obstacles, specified as sprite sized offsets from the main
+#[derive(Clone)]
+pub struct SpawnPattern {
+    pub offsets: Vec<Vec2>,
+    pub min_score: f32,
+}
 
 pub struct AvailableSpawnPatterns {
     pub patterns: Vec<SpawnPattern>,
@@ -18,7 +23,16 @@ pub struct AvailableSpawnPatterns {
 impl AvailableSpawnPatterns {
     fn new() -> Self {
         AvailableSpawnPatterns {
-            patterns: vec![SpawnPattern(vec![5])],
+            patterns: vec![
+                SpawnPattern {
+                    offsets: vec![Vec2::ZERO],
+                    min_score: -1.,
+                },
+                SpawnPattern {
+                    offsets: vec![Vec2::new(-1., 0.), Vec2::ZERO, Vec2::new(1., 0.)],
+                    min_score: -1.,
+                },
+            ],
         }
     }
 }
@@ -73,9 +87,10 @@ fn spawn_obstacles(
     ship: Res<PlayerShip>,
     textures: Res<TextureAssets>,
     game_map: Res<GameMap>,
+    patterns: Res<AvailableSpawnPatterns>,
+    score: Res<Score>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut timers: Query<&mut Timer, With<SpawnTimer>>,
-    _patterns: Res<AvailableSpawnPatterns>,
 ) {
     if ship.is_dead {
         return;
@@ -90,22 +105,42 @@ fn spawn_obstacles(
     let mut rng = thread_rng();
     let x_extents = -(game_map.width / 2.)..=(game_map.width / 2.);
 
-    println!("Spawning obstacle");
-    commands
-        .spawn_bundle(SpriteBundle {
-            material: materials.add(textures.cloud_001.clone().into()),
-            transform: Transform::from_translation(Vec3::new(
-                rng.gen_range(x_extents).floor() * game_map.sprite_size,
-                game_map.top_y() + game_map.pad_y * 3. * game_map.sprite_size, // spawn out of sight
-                1.,
-            )),
-            sprite: Sprite {
-                size: Vec2::new(32., 32.),
-                ..Default::default()
-            },
-            ..Default::default()
+    let spawn_x = rng.gen_range(x_extents).floor() * game_map.sprite_size;
+    let spawn_patterns = patterns
+        .patterns
+        .iter()
+        .filter_map(|pattern| {
+            if pattern.min_score < score.current {
+                Some(pattern.clone())
+            } else {
+                None
+            }
         })
-        .insert(Obstacle);
+        .collect::<Vec<_>>();
+    let spawn_pattern = spawn_patterns.choose(&mut rng).unwrap();
+
+    println!("Spawning obstacle");
+    let material = materials.add(textures.cloud_001.clone().into());
+
+    for offset in spawn_pattern.offsets.iter() {
+        commands
+            .spawn_bundle(SpriteBundle {
+                material: material.clone(),
+                transform: Transform::from_translation(Vec3::new(
+                    spawn_x + offset.x * game_map.sprite_size,
+                    game_map.top_y()
+                        + game_map.pad_y * 3. * game_map.sprite_size
+                        + offset.y * game_map.sprite_size, // spawn out of sight
+                    1.,
+                )),
+                sprite: Sprite {
+                    size: Vec2::new(32., 32.),
+                    ..Default::default()
+                },
+                ..Default::default()
+            })
+            .insert(Obstacle);
+    }
 }
 
 /// Moves the obstacles down towards the player
