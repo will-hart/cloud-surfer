@@ -7,6 +7,7 @@ use crate::loading::TextureAssets;
 use crate::GameState;
 use crate::SystemLabels;
 
+#[macro_export]
 macro_rules! by_side {
     ($side:expr, $left:expr, $right:expr) => {{
         match $side {

@@ -2,11 +2,12 @@ use bevy::prelude::*;
 use rand::{seq::SliceRandom, thread_rng, Rng};
 
 use crate::{
+    by_side,
     game_map::GameMap,
     game_time::GameTime,
     loading::TextureAssets,
     player::{IsDead, Player, PlayerShip, PlayerShipSide},
-    score::Score,
+    score::{CapturedObstacle, Score},
     GameState, SystemLabels,
 };
 
@@ -64,11 +65,6 @@ impl Plugin for ObstaclePlugin {
                             .system()
                             .label(SystemLabels::MoveObstacles)
                             .after(SystemLabels::SpawnObstacles),
-                    )
-                    .with_system(
-                        check_for_obstacle_collisions
-                            .system()
-                            .after(SystemLabels::MoveObstacles),
                     )
                     .with_system(
                         remove_dead_obstacles
@@ -155,47 +151,49 @@ fn spawn_obstacles(
 
 /// Moves the obstacles down towards the player
 fn move_obstacles(
-    time: Res<GameTime>,
-    ship: Res<PlayerShip>,
-    mut obstacles: Query<&mut Transform, With<Obstacle>>,
-) {
-    if ship.is_dead {
-        return;
-    }
-
-    for mut tx in obstacles.iter_mut() {
-        tx.translation.y -= 150. * time.delta;
-    }
-}
-
-/// Compares player and ship positions and kills the ship if it hits an obstacle
-fn check_for_obstacle_collisions(
     mut commands: Commands,
-    game_map: Res<GameMap>,
+    time: Res<GameTime>,
     mut ship: ResMut<PlayerShip>,
+    game_map: Res<GameMap>,
     players: Query<Entity, (With<Player>, Without<IsDead>)>,
-    obstacles: Query<&Transform, With<Obstacle>>,
-    ship_sides: Query<&Transform, With<PlayerShipSide>>,
+    ship_sides: Query<(&Transform, &PlayerShipSide), Without<Player>>,
+    mut obstacles: Query<
+        (Entity, &mut Transform, &mut Visible),
+        (With<Obstacle>, Without<PlayerShipSide>, Without<Player>),
+    >,
 ) {
     if ship.is_dead {
         return;
     }
 
-    for obs_tx in obstacles.iter() {
-        for ship_tx in ship_sides.iter() {
-            let dx = ship_tx.translation.x - obs_tx.translation.x;
+    let by = game_map.bottom_y();
+    let sides = ship_sides.iter().fold((0., 0.), |acc, (tx, side)| {
+        by_side!(side, (tx.translation.x, acc.1), (acc.0, tx.translation.x))
+    });
+    let min_x_sep = 0.8 * game_map.sprite_size;
 
-            if dx.abs() < 0.9 * game_map.sprite_size {
-                let dy = ship_tx.translation.y - obs_tx.translation.y;
+    for (entity, mut tx, mut vis) in obstacles.iter_mut() {
+        let before = tx.translation.y;
+        let after = tx.translation.y - 150. * time.delta;
+        tx.translation.y = after;
 
-                if dy.abs() < 0.9 * game_map.sprite_size {
-                    println!("hit obstacle");
+        // only check visible obstacles to see if they just crossed the tether line
+        if vis.is_visible && before > by && after < by {
+            let obs_x = tx.translation.x;
 
-                    commands.entity(players.single().unwrap()).insert(IsDead);
-                    ship.is_dead = true;
+            // crossed over! Check if we collided with player ships or went through the tether
+            if (obs_x - sides.0).abs() < min_x_sep || (obs_x - sides.1).abs() < min_x_sep {
+                println!("Hit ship!");
+                commands.entity(players.single().unwrap()).insert(IsDead);
+                ship.is_dead = true;
+                return;
+            }
 
-                    return;
-                }
+            // otherwise check if we went through the tether
+            if obs_x > sides.0 && obs_x < sides.1 {
+                println!("Hit tether!");
+                vis.is_visible = false;
+                commands.entity(entity).insert(CapturedObstacle);
             }
         }
     }

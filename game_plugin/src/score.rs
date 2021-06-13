@@ -2,6 +2,8 @@ use bevy::prelude::*;
 
 use crate::{game_time::GameTime, player::PlayerShip, GameState, SystemLabels};
 
+pub struct CapturedObstacle;
+
 pub struct ScorePlugin;
 
 pub struct Score {
@@ -34,6 +36,7 @@ impl Plugin for ScorePlugin {
                         .label(SystemLabels::UpdateScore)
                         .after(SystemLabels::UpdateTime),
                 )
+                .with_system(score_captured_obstacles.system())
                 .with_system(
                     update_score_text_ui
                         .system()
@@ -101,6 +104,24 @@ fn update_score(time: Res<GameTime>, ship: Res<PlayerShip>, mut score: ResMut<Sc
     }
 
     score.current += time.delta * score.multiplier;
+}
+
+/// Increments the score by the time
+fn score_captured_obstacles(
+    mut commands: Commands,
+    ship: Res<PlayerShip>,
+    mut score: ResMut<Score>,
+    captured_obstacles: Query<Entity, With<CapturedObstacle>>,
+) {
+    if ship.is_dead {
+        return;
+    }
+
+    for entity in captured_obstacles.iter() {
+        score.current += 10.;
+        // prevent continuously scoring from this obstacle
+        commands.entity(entity).remove::<CapturedObstacle>();
+    }
 }
 
 /// despawns the score ui
