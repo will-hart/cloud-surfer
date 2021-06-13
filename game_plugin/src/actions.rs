@@ -21,19 +21,19 @@ fn set_movement_actions(mut actions: ResMut<Actions>, keyboard_input: Res<Input<
     actions.player_left_move = 0;
     actions.player_right_move = 0;
 
-    if keyboard_input.just_pressed(KeyCode::A) {
+    if keyboard_input.pressed(KeyCode::A) {
         actions.player_left_move -= 1;
     }
 
-    if keyboard_input.just_pressed(KeyCode::D) {
+    if keyboard_input.pressed(KeyCode::D) {
         actions.player_left_move += 1;
     }
 
-    if keyboard_input.just_pressed(KeyCode::J) {
+    if keyboard_input.pressed(KeyCode::J) {
         actions.player_right_move -= 1;
     }
 
-    if keyboard_input.just_pressed(KeyCode::L) {
+    if keyboard_input.pressed(KeyCode::L) {
         actions.player_right_move += 1;
     }
 }

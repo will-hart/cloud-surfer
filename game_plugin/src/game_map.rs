@@ -28,4 +28,10 @@ impl GameMap {
     pub fn top_y(&self) -> f32 {
         (self.height / 2.) * self.sprite_size
     }
+
+    /// Get the maximum x-value in the positive x-direction (right side).
+    /// The map is symmetrical so can negate this to find the left boundary.
+    pub fn get_x_bound(&self) -> f32 {
+        (self.width / 2.) * self.sprite_size
+    }
 }

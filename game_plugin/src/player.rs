@@ -5,6 +5,15 @@ use crate::game_map::GameMap;
 use crate::loading::TextureAssets;
 use crate::GameState;
 
+macro_rules! by_side {
+    ($side:expr, $left:expr, $right:expr) => {{
+        match $side {
+            PlayerShipSide::Left => $left,
+            PlayerShipSide::Right => $right,
+        }
+    }};
+}
+
 pub struct PlayerPlugin;
 
 pub struct Player;
@@ -20,9 +29,6 @@ pub struct PlayerShip {
 
     pub max_separation: f32,
     pub separation_strain: f32,
-
-    pub target_left: f32,
-    pub target_right: f32,
 }
 
 pub enum PlayerShipSide {
@@ -66,9 +72,6 @@ fn spawn_player(
 
         max_separation: 5. * game_map.sprite_size,
         separation_strain: 0.,
-
-        target_left: -game_map.sprite_size,
-        target_right: game_map.sprite_size,
     };
 
     commands.insert_resource(ship);
@@ -85,7 +88,7 @@ fn spawn_player(
                     SpriteBundle {
                         material: materials.add(textures.player_left.clone().into()),
                         transform: Transform::from_translation(Vec3::new(
-                            ship.target_left,
+                            -game_map.sprite_size / 2.,
                             game_map.bottom_y(),
                             1.,
                         )),
@@ -103,7 +106,7 @@ fn spawn_player(
                     SpriteBundle {
                         material: materials.add(textures.player_right.clone().into()),
                         transform: Transform::from_translation(Vec3::new(
-                            ship.target_right,
+                            game_map.sprite_size / 2.,
                             game_map.bottom_y(),
                             1.,
                         )),
@@ -122,12 +125,7 @@ fn spawn_player(
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
     // spawn the laser between the two ships
-    let mut laser_tx = Transform::from_translation(Vec3::new(
-        (ship.target_left + ship.target_right) / 2.,
-        game_map.bottom_y(),
-        0.5,
-    ));
-
+    let mut laser_tx = Transform::from_translation(Vec3::new(0., game_map.bottom_y(), 0.5));
     laser_tx.scale.x = 1.4;
 
     commands
@@ -145,64 +143,51 @@ fn move_player(
     time: Res<Time>,
     actions: Res<Actions>,
     game_map: Res<GameMap>,
-    mut ship: ResMut<PlayerShip>,
-    mut ship_side_tx_query: Query<(&mut Transform, &PlayerShipSide)>,
+    ship: Res<PlayerShip>,
+    mut ship_sides: Query<(&mut Transform, &PlayerShipSide)>,
 ) {
     // if we don't have a player, don't move
     if ship.is_dead {
         return;
     }
 
-    ship.target_left = ship.target_left + (actions.player_left_move as f32) * game_map.sprite_size;
-    ship.target_right =
-        ship.target_right + (actions.player_right_move as f32) * game_map.sprite_size;
+    let delta_move = ship.speed * time.delta_seconds();
+    let moves = (actions.player_left_move, actions.player_right_move);
+    let sides = get_ship_sides(&mut ship_sides);
+    let x_bound = game_map.get_x_bound();
+    let target_x = (
+        (sides.0.x + (moves.0 as f32) * delta_move).clamp(-x_bound, x_bound),
+        sides.1.x + (moves.1 as f32) * delta_move.clamp(-x_bound, x_bound),
+    );
 
-    // update the ship side positions - remember that there is a rope connecting them, so we must also calculate
-    // the total applied movement and update the strain on the rope
-    let elapsed = time.delta_seconds();
-    for (mut tx, side) in ship_side_tx_query.iter_mut() {
-        let (translation, rotation) = match side {
-            PlayerShipSide::Left => get_ship_position_and_rotation(
-                elapsed * ship.speed,
-                &tx.translation,
-                ship.target_left,
-            ),
-            PlayerShipSide::Right => get_ship_position_and_rotation(
-                elapsed * ship.speed,
-                &tx.translation,
-                ship.target_right,
-            ),
-        };
+    let rotations = (
+        if moves.0 == 0 {
+            0.
+        } else {
+            moves.0.signum() as f32 * -std::f32::consts::FRAC_PI_8
+        },
+        if moves.1 == 0 {
+            0.
+        } else {
+            moves.1.signum() as f32 * -std::f32::consts::FRAC_PI_8
+        },
+    );
 
-        tx.translation = translation;
-        tx.rotation = Quat::from_axis_angle(Vec3::Z, rotation);
+    // update the ship side positions and rotations
+    // TODO could make this a bit nicer with a macro
+    for (mut tx, side) in ship_sides.iter_mut() {
+        tx.translation.x = by_side!(side, target_x.0, target_x.1);
+        tx.rotation = Quat::from_axis_angle(Vec3::Z, by_side!(side, rotations.0, rotations.1));
     }
 }
 
-/// Helper function which moves a ship towards its target position
-fn get_ship_position_and_rotation(normalised_speed: f32, pos: &Vec3, target: f32) -> (Vec3, f32) {
-    if pos.x == target {
-        // in position
-        (pos.clone(), 0.)
-    } else {
-        // move the ship towards its preferred location
-        let delta_x = target - pos.x;
-        let max_move = delta_x.signum() * normalised_speed;
-
-        (
-            Vec3::new(
-                pos.x
-                    + if delta_x < 0. {
-                        delta_x.clamp(max_move, 0.)
-                    } else {
-                        delta_x.clamp(0., max_move)
-                    },
-                pos.y,
-                pos.z,
-            ),
-            delta_x.signum() * -std::f32::consts::FRAC_PI_8,
-        )
-    }
+/// Gest the ship sides from the PlayerShipSide query
+fn get_ship_sides(ship_sides: &mut Query<(&mut Transform, &PlayerShipSide)>) -> (Vec3, Vec3) {
+    ship_sides
+        .iter_mut()
+        .fold((Vec3::ZERO, Vec3::ZERO), |acc, (tx, side)| {
+            by_side!(side, (tx.translation, acc.1), (acc.0, tx.translation))
+        })
 }
 
 /// check if a player is ded
@@ -246,13 +231,11 @@ fn update_laser(
         return;
     }
 
-    let sides =
-        ship_sides
-            .iter_mut()
-            .fold((Vec3::ZERO, Vec3::ZERO), |acc, (tx, side)| match side {
-                PlayerShipSide::Left => (tx.translation, acc.1),
-                PlayerShipSide::Right => (acc.0, tx.translation),
-            });
+    let sides = ship_sides
+        .iter_mut()
+        .fold((Vec3::ZERO, Vec3::ZERO), |acc, (tx, side)| {
+            by_side!(side, (tx.translation, acc.1), (acc.0, tx.translation))
+        });
 
     // stretch the laser to fit between the two sides
     let dx = sides.1.x - sides.0.x;
