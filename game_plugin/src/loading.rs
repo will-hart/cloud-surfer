@@ -41,7 +41,14 @@ pub struct TextureAssets {
     pub grass: Handle<Texture>,
 }
 
-fn start_loading(mut commands: Commands, asset_server: Res<AssetServer>) {
+pub struct LoadingItem;
+pub struct LoadingText;
+
+fn start_loading(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
     let mut fonts: Vec<HandleUntyped> = vec![];
     fonts.push(asset_server.load_untyped(PATHS.fira_sans));
 
@@ -61,6 +68,37 @@ fn start_loading(mut commands: Commands, asset_server: Res<AssetServer>) {
         fonts,
         audio,
     });
+
+    commands
+        .spawn_bundle(NodeBundle {
+            style: Style {
+                size: Size::new(Val::Percent(100.), Val::Percent(100.)),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                flex_direction: FlexDirection::ColumnReverse,
+                ..Default::default()
+            },
+            material: materials.add(Color::BLACK.into()),
+            ..Default::default()
+        })
+        .insert(LoadingItem)
+        .with_children(|node| {
+            node.spawn_bundle(TextBundle {
+                text: Text {
+                    sections: vec![TextSection {
+                        value: "Loading".to_string(),
+                        style: TextStyle {
+                            font: asset_server.get_handle("fonts/FiraSans-Bold.ttf"),
+                            font_size: 30.0,
+                            color: Color::rgb(0.9, 0.9, 0.9),
+                        },
+                    }],
+                    alignment: Default::default(),
+                },
+                ..Default::default()
+            })
+            .insert(LoadingText);
+        });
 }
 
 fn check_state(
@@ -68,20 +106,25 @@ fn check_state(
     mut state: ResMut<State<GameState>>,
     asset_server: Res<AssetServer>,
     loading_state: Res<LoadingState>,
+    mut loading_text: Query<&mut Text, With<LoadingText>>,
+    loading_items: Query<Entity, With<LoadingItem>>,
 ) {
     if LoadState::Loaded
         != asset_server.get_group_load_state(loading_state.fonts.iter().map(|handle| handle.id))
     {
+        loading_text.single_mut().unwrap().sections[0].value = "Loading fonts...".into();
         return;
     }
     if LoadState::Loaded
         != asset_server.get_group_load_state(loading_state.textures.iter().map(|handle| handle.id))
     {
+        loading_text.single_mut().unwrap().sections[0].value = "Loading textures...".into();
         return;
     }
     if LoadState::Loaded
         != asset_server.get_group_load_state(loading_state.audio.iter().map(|handle| handle.id))
     {
+        loading_text.single_mut().unwrap().sections[0].value = "Loading audio...".into();
         return;
     }
 
@@ -104,4 +147,8 @@ fn check_state(
     });
 
     state.set(GameState::Menu).unwrap();
+
+    for item in loading_items.iter() {
+        commands.entity(item).despawn_recursive();
+    }
 }
