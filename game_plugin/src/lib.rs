@@ -1,6 +1,7 @@
 mod actions;
 mod audio;
 pub mod game_map;
+mod game_over_ui;
 mod game_time;
 mod loading;
 mod menu;
@@ -10,6 +11,7 @@ mod score;
 
 use crate::actions::ActionsPlugin;
 use crate::audio::InternalAudioPlugin;
+use crate::game_over_ui::GameOverPlugin;
 use crate::game_time::GameTimePlugin;
 use crate::loading::LoadingPlugin;
 use crate::menu::MenuPlugin;
@@ -26,6 +28,7 @@ enum GameState {
     Loading,
     Playing,
     Menu,
+    GameOver,
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash, SystemLabel)]
@@ -50,6 +53,7 @@ impl Plugin for GamePlugin {
             .add_plugin(PlayerPlugin)
             .add_plugin(ObstaclePlugin)
             .add_plugin(ScorePlugin)
+            .add_plugin(GameOverPlugin)
             // .add_plugin(FrameTimeDiagnosticsPlugin::default())
             // .add_plugin(LogDiagnosticsPlugin::default())
             ;

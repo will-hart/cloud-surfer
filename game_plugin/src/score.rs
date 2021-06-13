@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{actions::Actions, game_time::GameTime, player::PlayerShip, GameState, SystemLabels};
+use crate::{game_time::GameTime, player::PlayerShip, GameState, SystemLabels};
 
 pub struct CapturedObstacle;
 
@@ -41,8 +41,7 @@ impl Plugin for ScorePlugin {
                     update_score_text_ui
                         .system()
                         .after(SystemLabels::UpdateScore),
-                )
-                .with_system(restart_game.system()),
+                ),
         )
         .add_system_set(
             SystemSet::on_exit(GameState::Playing).with_system(despawn_score_ui.system()),
@@ -122,22 +121,6 @@ fn score_captured_obstacles(
         score.current += 10.;
         // prevent continuously scoring from this obstacle
         commands.entity(entity).remove::<CapturedObstacle>();
-    }
-}
-
-fn restart_game(
-    ship: Res<PlayerShip>,
-    mut actions: ResMut<Actions>,
-    mut state: ResMut<State<GameState>>,
-) {
-    if !ship.is_dead {
-        return;
-    }
-
-    if actions.restart_requested {
-        state.set(GameState::Menu).unwrap();
-        actions.restart_requested = false;
-        return;
     }
 }
 

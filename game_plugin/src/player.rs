@@ -23,7 +23,7 @@ pub struct PlayerPlugin;
 
 pub struct Player;
 
-pub struct IsDead;
+pub struct IsDead(pub String);
 
 pub struct Laser;
 
@@ -226,11 +226,15 @@ pub fn is_player_dead_checks(
             if diff.abs() < game_map.sprite_size * 0.75 {
                 println!("Bashed into each other!");
                 ship.is_dead = true;
-                commands.entity(player).insert(IsDead);
-            } else if ship.separation_strain > 3. {
+                commands
+                    .entity(player)
+                    .insert(IsDead("The ships collided!".into()));
+            } else if ship.separation_strain > MAX_SEPARATION_STRAIN {
                 println!("Tether broke!");
                 ship.is_dead = true;
-                commands.entity(player).insert(IsDead);
+                commands
+                    .entity(player)
+                    .insert(IsDead("The tether broke!".into()));
             }
         }
         Err(_) => {}

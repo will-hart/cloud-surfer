@@ -184,7 +184,9 @@ fn move_obstacles(
             // crossed over! Check if we collided with player ships or went through the tether
             if (obs_x - sides.0).abs() < min_x_sep || (obs_x - sides.1).abs() < min_x_sep {
                 println!("Hit ship!");
-                commands.entity(players.single().unwrap()).insert(IsDead);
+                commands
+                    .entity(players.single().unwrap())
+                    .insert(IsDead("The ship hit an obstacle!".into()));
                 ship.is_dead = true;
                 return;
             }
