@@ -161,36 +161,46 @@ fn move_player(
     // the total applied movement and update the strain on the rope
     let elapsed = time.delta_seconds();
     for (mut tx, side) in ship_side_tx_query.iter_mut() {
-        tx.translation = match side {
-            PlayerShipSide::Left => {
-                get_ship_position(elapsed * ship.speed, &tx.translation, ship.target_left)
-            }
-            PlayerShipSide::Right => {
-                get_ship_position(elapsed * ship.speed, &tx.translation, ship.target_right)
-            }
+        let (translation, rotation) = match side {
+            PlayerShipSide::Left => get_ship_position_and_rotation(
+                elapsed * ship.speed,
+                &tx.translation,
+                ship.target_left,
+            ),
+            PlayerShipSide::Right => get_ship_position_and_rotation(
+                elapsed * ship.speed,
+                &tx.translation,
+                ship.target_right,
+            ),
         };
+
+        tx.translation = translation;
+        tx.rotation = Quat::from_axis_angle(Vec3::Z, rotation);
     }
 }
 
 /// Helper function which moves a ship towards its target position
-fn get_ship_position(normalised_speed: f32, pos: &Vec3, target: f32) -> Vec3 {
+fn get_ship_position_and_rotation(normalised_speed: f32, pos: &Vec3, target: f32) -> (Vec3, f32) {
     if pos.x == target {
         // in position
-        pos.clone()
+        (pos.clone(), 0.)
     } else {
         // move the ship towards its preferred location
         let delta_x = target - pos.x;
         let max_move = delta_x.signum() * normalised_speed;
 
-        Vec3::new(
-            pos.x
-                + if delta_x < 0. {
-                    delta_x.clamp(max_move, 0.)
-                } else {
-                    delta_x.clamp(0., max_move)
-                },
-            pos.y,
-            pos.z,
+        (
+            Vec3::new(
+                pos.x
+                    + if delta_x < 0. {
+                        delta_x.clamp(max_move, 0.)
+                    } else {
+                        delta_x.clamp(0., max_move)
+                    },
+                pos.y,
+                pos.z,
+            ),
+            delta_x.signum() * -std::f32::consts::FRAC_PI_8,
         )
     }
 }
