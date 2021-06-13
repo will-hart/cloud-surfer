@@ -17,7 +17,7 @@ macro_rules! by_side {
     }};
 }
 
-pub const MAX_SEPARATION_STRAIN: f32 = 5.;
+pub const MAX_SEPARATION_STRAIN: f32 = 7.;
 
 pub struct PlayerPlugin;
 
