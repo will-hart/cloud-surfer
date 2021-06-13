@@ -1,6 +1,7 @@
 mod actions;
 mod audio;
 pub mod game_map;
+mod game_time;
 mod loading;
 mod menu;
 mod obstacles;
@@ -9,6 +10,7 @@ mod score;
 
 use crate::actions::ActionsPlugin;
 use crate::audio::InternalAudioPlugin;
+use crate::game_time::GameTimePlugin;
 use crate::loading::LoadingPlugin;
 use crate::menu::MenuPlugin;
 use crate::obstacles::ObstaclePlugin;
@@ -26,11 +28,21 @@ enum GameState {
     Menu,
 }
 
+#[derive(Clone, Eq, PartialEq, Debug, Hash, SystemLabel)]
+enum SystemLabels {
+    UpdateTime,
+    SpawnObstacles,
+    MoveObstacles,
+    MovePlayer,
+    UpdateScore,
+}
+
 pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_state(GameState::Loading)
+            .add_plugin(GameTimePlugin)
             .add_plugin(LoadingPlugin)
             .add_plugin(ActionsPlugin)
             .add_plugin(MenuPlugin)

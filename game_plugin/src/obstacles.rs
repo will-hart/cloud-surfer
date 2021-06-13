@@ -3,10 +3,11 @@ use rand::{seq::SliceRandom, thread_rng, Rng};
 
 use crate::{
     game_map::GameMap,
+    game_time::GameTime,
     loading::TextureAssets,
     player::{IsDead, Player, PlayerShip, PlayerShipSide},
     score::Score,
-    GameState,
+    GameState, SystemLabels,
 };
 
 /// Possible spawn patterns for obstacles, specified as sprite sized offsets from the main
@@ -52,19 +53,28 @@ impl Plugin for ObstaclePlugin {
             )
             .add_system_set(
                 SystemSet::on_update(GameState::Playing)
-                    .with_system(spawn_obstacles.system().label("spawn_obstacles"))
+                    .with_system(
+                        spawn_obstacles
+                            .system()
+                            .label(SystemLabels::SpawnObstacles)
+                            .after(SystemLabels::UpdateTime),
+                    )
                     .with_system(
                         move_obstacles
                             .system()
-                            .label("move_obstacles")
-                            .after("spawn_obstacles"),
+                            .label(SystemLabels::MoveObstacles)
+                            .after(SystemLabels::SpawnObstacles),
                     )
                     .with_system(
                         check_for_obstacle_collisions
                             .system()
-                            .after("move_obstacles"),
+                            .after(SystemLabels::MoveObstacles),
                     )
-                    .with_system(remove_dead_obstacles.system().after("move_obstacles")),
+                    .with_system(
+                        remove_dead_obstacles
+                            .system()
+                            .after(SystemLabels::MoveObstacles),
+                    ),
             )
             .add_system_set(
                 SystemSet::on_exit(GameState::Playing).with_system(despawn_obstacles.system()),
@@ -83,7 +93,7 @@ fn setup_obstacle_spawning(mut commands: Commands) {
 /// Spawns obstacles at the top of the screen
 fn spawn_obstacles(
     mut commands: Commands,
-    time: Res<Time>,
+    time: Res<GameTime>,
     ship: Res<PlayerShip>,
     textures: Res<TextureAssets>,
     game_map: Res<GameMap>,
@@ -97,7 +107,7 @@ fn spawn_obstacles(
     }
 
     let mut timer = timers.single_mut().unwrap();
-    timer.tick(time.delta());
+    timer.tick(time.delta_duration);
     if !timer.just_finished() {
         return;
     }
@@ -145,7 +155,7 @@ fn spawn_obstacles(
 
 /// Moves the obstacles down towards the player
 fn move_obstacles(
-    time: Res<Time>,
+    time: Res<GameTime>,
     ship: Res<PlayerShip>,
     mut obstacles: Query<&mut Transform, With<Obstacle>>,
 ) {
@@ -153,9 +163,8 @@ fn move_obstacles(
         return;
     }
 
-    let dt = time.delta_seconds();
     for mut tx in obstacles.iter_mut() {
-        tx.translation.y -= 150. * dt;
+        tx.translation.y -= 150. * time.delta;
     }
 }
 

@@ -2,8 +2,10 @@ use bevy::prelude::*;
 
 use crate::actions::Actions;
 use crate::game_map::GameMap;
+use crate::game_time::GameTime;
 use crate::loading::TextureAssets;
 use crate::GameState;
+use crate::SystemLabels;
 
 macro_rules! by_side {
     ($side:expr, $left:expr, $right:expr) => {{
@@ -45,9 +47,18 @@ impl Plugin for PlayerPlugin {
         )
         .add_system_set(
             SystemSet::on_update(GameState::Playing)
-                .with_system(move_player.system().label("move_player"))
-                .with_system(is_player_dead_checks.system().after("move_player"))
-                .with_system(update_laser.system().after("move_player")),
+                .with_system(
+                    move_player
+                        .system()
+                        .label(SystemLabels::MovePlayer)
+                        .after(SystemLabels::UpdateTime),
+                )
+                .with_system(
+                    is_player_dead_checks
+                        .system()
+                        .after(SystemLabels::MovePlayer),
+                )
+                .with_system(update_laser.system().after(SystemLabels::MovePlayer)),
         )
         .add_system_set(SystemSet::on_exit(GameState::Playing).with_system(despawn_level.system()));
     }
@@ -140,7 +151,7 @@ fn spawn_player(
 
 /// Moves a player based on input towards their target position
 fn move_player(
-    time: Res<Time>,
+    time: Res<GameTime>,
     actions: Res<Actions>,
     game_map: Res<GameMap>,
     ship: Res<PlayerShip>,
@@ -151,7 +162,7 @@ fn move_player(
         return;
     }
 
-    let delta_move = ship.speed * time.delta_seconds();
+    let delta_move = ship.speed * time.delta;
     let moves = (actions.player_left_move, actions.player_right_move);
     let sides = get_ship_sides(&mut ship_sides);
     let x_bound = game_map.get_x_bound();
@@ -221,7 +232,7 @@ pub fn is_player_dead_checks(
 
 /// Draws and animates "laser" between the two ships
 fn update_laser(
-    time: Res<Time>,
+    time: Res<GameTime>,
     game_map: Res<GameMap>,
     mut ship: ResMut<PlayerShip>,
     mut lasers: Query<(&mut Transform, &mut TextureAtlasSprite, &mut Timer), With<Laser>>,
@@ -244,11 +255,11 @@ fn update_laser(
     // update separation strain
     if dx > ship.max_separation {
         // increase strain
-        ship.separation_strain += 0.3 * time.delta_seconds();
+        ship.separation_strain += 0.3 * time.delta;
     } else {
         // reduce strain
         if ship.separation_strain > 0. {
-            ship.separation_strain = (ship.separation_strain - time.delta_seconds()).clamp(0., 1.);
+            ship.separation_strain = (ship.separation_strain - time.delta).clamp(0., 1.);
         }
     }
 
@@ -259,7 +270,7 @@ fn update_laser(
 
         // update the animation frame for the laser
         // show flickering if stress > 0.5
-        timer.tick(time.delta());
+        timer.tick(time.delta_duration);
         if timer.just_finished() {
             let frame_count = if dx > ship.max_separation {
                 if ship.separation_strain > 0.5 {

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{player::PlayerShip, GameState};
+use crate::{game_time::GameTime, player::PlayerShip, GameState, SystemLabels};
 
 pub struct ScorePlugin;
 
@@ -28,8 +28,17 @@ impl Plugin for ScorePlugin {
         )
         .add_system_set(
             SystemSet::on_update(GameState::Playing)
-                .with_system(update_score.system().label("update_score"))
-                .with_system(update_score_text_ui.system().after("update_score")),
+                .with_system(
+                    update_score
+                        .system()
+                        .label(SystemLabels::UpdateScore)
+                        .after(SystemLabels::UpdateTime),
+                )
+                .with_system(
+                    update_score_text_ui
+                        .system()
+                        .after(SystemLabels::UpdateScore),
+                ),
         )
         .add_system_set(
             SystemSet::on_exit(GameState::Playing).with_system(despawn_score_ui.system()),
@@ -86,12 +95,12 @@ fn update_score_text_ui(score: Res<Score>, mut score_text: Query<&mut Text, With
 }
 
 /// Increments the score by the time
-fn update_score(time: Res<Time>, ship: Res<PlayerShip>, mut score: ResMut<Score>) {
+fn update_score(time: Res<GameTime>, ship: Res<PlayerShip>, mut score: ResMut<Score>) {
     if ship.is_dead {
         return;
     }
 
-    score.current += time.delta_seconds() * score.multiplier;
+    score.current += time.delta * score.multiplier;
 }
 
 /// despawns the score ui
