@@ -133,7 +133,8 @@ fn spawn_player(
         });
 
     // spawn the laser texture atlas
-    let texture_atlas = TextureAtlas::from_grid(textures.laser.clone(), Vec2::new(32., 16.0), 5, 1);
+    let texture_atlas =
+        TextureAtlas::from_grid(textures.laser.clone(), Vec2::new(32., 16.0), 10, 1);
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
     // spawn the laser between the two ships
@@ -147,7 +148,7 @@ fn spawn_player(
             ..Default::default()
         })
         .insert(Laser)
-        .insert(Timer::from_seconds(0.2, true));
+        .insert(Timer::from_seconds(0.1, true));
 }
 
 /// Moves a player based on input towards their target position
@@ -277,7 +278,9 @@ fn update_laser(
         timer.tick(time.delta_duration);
         if timer.just_finished() {
             let frame_count = if dx > ship.max_separation {
-                if ship.separation_strain > 0.5 {
+                if ship.separation_strain > 2. {
+                    10
+                } else if ship.separation_strain > 1. {
                     5
                 } else {
                     3
