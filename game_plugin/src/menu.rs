@@ -60,7 +60,7 @@ fn setup_menu(
             node.spawn_bundle(TextBundle {
                 text: Text {
                     sections: vec![TextSection {
-                        value: "Cloud Surfer".to_string(),
+                        value: "HyperFarmer!1!!".to_string(),
                         style: TextStyle {
                             font: asset_server.get_handle("fonts/FiraSans-Bold.ttf"),
                             font_size: 30.0,
@@ -84,8 +84,7 @@ fn setup_menu(
                 },
                 text: Text {
                     sections: vec![TextSection {
-                        value: "Use A/D to move the left ship, and J/L to move the right ship."
-                            .to_string(),
+                        value: "Oh no! Its about to rain and we need to save our hay.".to_string(),
                         style: TextStyle {
                             font: asset_server.get_handle("fonts/FiraSans-Bold.ttf"),
                             font_size: 20.0,
@@ -100,32 +99,8 @@ fn setup_menu(
             node.spawn_bundle(TextBundle {
                 text: Text {
                     sections: vec![TextSection {
-                        value: "Capture coins with your tether, but don't move too far apart"
+                        value: "Hmm... What if (hear me out)... what if we use a big laser?"
                             .to_string(),
-                        style: TextStyle {
-                            font: asset_server.get_handle("fonts/FiraSans-Bold.ttf"),
-                            font_size: 20.0,
-                            color: Color::rgb(0.9, 0.9, 0.9),
-                        },
-                    }],
-                    alignment: Default::default(),
-                },
-                ..Default::default()
-            });
-
-            node.spawn_bundle(TextBundle {
-                style: Style {
-                    margin: Rect {
-                        left: Val::Px(0.),
-                        right: Val::Px(0.),
-                        top: Val::Px(0.),
-                        bottom: Val::Px(20.),
-                    },
-                    ..Default::default()
-                },
-                text: Text {
-                    sections: vec![TextSection {
-                        value: "or the tether will snap! Avoid the boulders!".to_string(),
                         style: TextStyle {
                             font: asset_server.get_handle("fonts/FiraSans-Bold.ttf"),
                             font_size: 20.0,
@@ -143,6 +118,74 @@ fn setup_menu(
                         left: Val::Px(0.),
                         right: Val::Px(0.),
                         top: Val::Px(20.),
+                        bottom: Val::Px(0.),
+                    },
+                    ..Default::default()
+                },
+                text: Text {
+                    sections: vec![TextSection {
+                        value:
+                            "Capture the hay with your laser tether, but don't move too far apart"
+                                .to_string(),
+                        style: TextStyle {
+                            font: asset_server.get_handle("fonts/FiraSans-Bold.ttf"),
+                            font_size: 20.0,
+                            color: Color::rgb(0.9, 0.9, 0.9),
+                        },
+                    }],
+                    alignment: Default::default(),
+                },
+                ..Default::default()
+            });
+
+            node.spawn_bundle(TextBundle {
+                text: Text {
+                    sections: vec![TextSection {
+                        value: "or <insert reason here>, and we all know how bad that could be!"
+                            .to_string(),
+                        style: TextStyle {
+                            font: asset_server.get_handle("fonts/FiraSans-Bold.ttf"),
+                            font_size: 20.0,
+                            color: Color::rgb(0.9, 0.9, 0.9),
+                        },
+                    }],
+                    alignment: Default::default(),
+                },
+                ..Default::default()
+            });
+
+            node.spawn_bundle(TextBundle {
+                style: Style {
+                    margin: Rect {
+                        left: Val::Px(0.),
+                        right: Val::Px(0.),
+                        top: Val::Px(20.),
+                        bottom: Val::Px(0.),
+                    },
+                    ..Default::default()
+                },
+                text: Text {
+                    sections: vec![TextSection {
+                        value:
+                            "Use A/D to move the left tractor, and J/L to move the right tractor."
+                                .to_string(),
+                        style: TextStyle {
+                            font: asset_server.get_handle("fonts/FiraSans-Bold.ttf"),
+                            font_size: 20.0,
+                            color: Color::rgb(0.9, 0.9, 0.9),
+                        },
+                    }],
+                    alignment: Default::default(),
+                },
+                ..Default::default()
+            });
+
+            node.spawn_bundle(TextBundle {
+                style: Style {
+                    margin: Rect {
+                        left: Val::Px(0.),
+                        right: Val::Px(0.),
+                        top: Val::Px(0.),
                         bottom: Val::Px(20.),
                     },
                     ..Default::default()
