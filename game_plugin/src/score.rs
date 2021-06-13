@@ -1,6 +1,10 @@
 use bevy::prelude::*;
 
-use crate::{game_time::GameTime, player::PlayerShip, GameState, SystemLabels};
+use crate::{
+    game_time::GameTime,
+    player::{PlayerShip, MAX_SEPARATION_STRAIN},
+    GameState, SystemLabels,
+};
 
 pub struct CapturedObstacle;
 
@@ -74,14 +78,24 @@ fn spawn_score_ui(
             parent
                 .spawn_bundle(TextBundle {
                     text: Text {
-                        sections: vec![TextSection {
-                            value: "".to_string(),
-                            style: TextStyle {
-                                font: asset_server.get_handle("fonts/FiraSans-Bold.ttf"),
-                                font_size: 30.0,
-                                color: Color::rgb(0.3, 0.3, 0.3),
+                        sections: vec![
+                            TextSection {
+                                value: "".to_string(),
+                                style: TextStyle {
+                                    font: asset_server.get_handle("fonts/FiraSans-Bold.ttf"),
+                                    font_size: 30.0,
+                                    color: Color::rgb(0.3, 0.3, 0.3),
+                                },
                             },
-                        }],
+                            TextSection {
+                                value: "".to_string(),
+                                style: TextStyle {
+                                    font: asset_server.get_handle("fonts/FiraSans-Bold.ttf"),
+                                    font_size: 30.0,
+                                    color: Color::rgb(0.3, 0.3, 0.3),
+                                },
+                            },
+                        ],
                         alignment: Default::default(),
                     },
                     ..Default::default()
@@ -91,9 +105,23 @@ fn spawn_score_ui(
 }
 
 /// Updates the score UI
-fn update_score_text_ui(score: Res<Score>, mut score_text: Query<&mut Text, With<ScoreText>>) {
+fn update_score_text_ui(
+    score: Res<Score>,
+    ship: Res<PlayerShip>,
+    mut score_text: Query<&mut Text, With<ScoreText>>,
+) {
     for mut text in score_text.iter_mut() {
-        text.sections[0].value = format!("{:.0}", score.current.floor());
+        text.sections[0].value = format!("{:.0}, tether strain: ", score.current.floor());
+
+        text.sections[1].value = format!(
+            "{:.0}%",
+            100. * ship.separation_strain / MAX_SEPARATION_STRAIN
+        );
+        text.sections[1].style.color = Color::rgb(
+            0.3 + 0.5 * (ship.separation_strain / MAX_SEPARATION_STRAIN),
+            0.3,
+            0.3,
+        );
     }
 }
 
