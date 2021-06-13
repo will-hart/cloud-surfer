@@ -32,7 +32,11 @@ pub struct AudioAssets {
 }
 
 pub struct TextureAssets {
-    pub texture_bevy: Handle<Texture>,
+    pub cloud_001: Handle<Texture>,
+    pub player_left: Handle<Texture>,
+    pub player_right: Handle<Texture>,
+    pub laser: Handle<Texture>,
+    pub grass: Handle<Texture>,
 }
 
 fn start_loading(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -43,7 +47,11 @@ fn start_loading(mut commands: Commands, asset_server: Res<AssetServer>) {
     audio.push(asset_server.load_untyped(PATHS.audio_flying));
 
     let mut textures: Vec<HandleUntyped> = vec![];
-    textures.push(asset_server.load_untyped(PATHS.texture_bevy));
+    textures.push(asset_server.load_untyped(PATHS.cloud_001));
+    textures.push(asset_server.load_untyped(PATHS.player_left));
+    textures.push(asset_server.load_untyped(PATHS.player_right));
+    textures.push(asset_server.load_untyped(PATHS.laser));
+    textures.push(asset_server.load_untyped(PATHS.grass));
 
     commands.insert_resource(LoadingState {
         textures,
@@ -83,7 +91,11 @@ fn check_state(
     });
 
     commands.insert_resource(TextureAssets {
-        texture_bevy: asset_server.get_handle(PATHS.texture_bevy),
+        cloud_001: asset_server.get_handle(PATHS.cloud_001),
+        player_left: asset_server.get_handle(PATHS.player_left),
+        player_right: asset_server.get_handle(PATHS.player_right),
+        laser: asset_server.get_handle(PATHS.laser),
+        grass: asset_server.get_handle(PATHS.grass),
     });
 
     state.set(GameState::Menu).unwrap();

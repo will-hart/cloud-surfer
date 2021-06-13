@@ -892,17 +892,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cloud_surfer"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "bevy_webgl2",
- "embed-resource",
- "game_plugin",
- "winit",
-]
-
-[[package]]
 name = "cmake"
 version = "0.1.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1388,9 +1377,9 @@ checksum = "3dcaa9ae7725d12cdb85b3ad99a434db70b468c09ded17e012d86b5c1010f7a7"
 
 [[package]]
 name = "futures-core"
-version = "0.3.13"
+version = "0.3.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15496a72fabf0e62bdc3df11a59a3787429221dd0710ba8ef163d6f7a9112c94"
+checksum = "0402f765d8a89a26043b889b26ce3c4679d268fa6bb22cd7c6aad98340e179d1"
 
 [[package]]
 name = "futures-io"
@@ -1747,6 +1736,17 @@ checksum = "c592a42961cf144138e04a4bddbe3ef5c6f9fe6ef5eff6fd3bb767b254194171"
 dependencies = [
  "glam",
  "lazy_static",
+]
+
+[[package]]
+name = "hyper_farmer"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_webgl2",
+ "embed-resource",
+ "game_plugin",
+ "winit",
 ]
 
 [[package]]
