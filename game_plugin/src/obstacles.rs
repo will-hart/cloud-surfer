@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use rand::{seq::SliceRandom, thread_rng, Rng};
 
 use crate::{
+    audio_events::{AudioEffect, PlayAudioEffectEvent},
     by_side,
     game_map::GameMap,
     game_time::GameTime,
@@ -187,6 +188,7 @@ fn move_obstacles(
     time: Res<GameTime>,
     mut ship: ResMut<PlayerShip>,
     game_map: Res<GameMap>,
+    mut audio_events: EventWriter<PlayAudioEffectEvent>,
     players: Query<Entity, (With<Player>, Without<IsDead>)>,
     ship_sides: Query<(&Transform, &PlayerShipSide), Without<Player>>,
     mut obstacles: Query<
@@ -240,6 +242,7 @@ fn move_obstacles(
                 println!("Hit tether!");
                 vis.is_visible = false;
                 commands.entity(entity).insert(CapturedObstacle);
+                audio_events.send(PlayAudioEffectEvent(AudioEffect::Collect));
             }
         }
     }

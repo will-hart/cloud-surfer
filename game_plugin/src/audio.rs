@@ -15,16 +15,13 @@ impl Plugin for InternalAudioPlugin {
         .add_system_set(SystemSet::on_enter(GameState::Menu).with_system(play_menu_music.system()))
         .add_system_set(
             SystemSet::on_enter(GameState::Playing).with_system(play_game_music.system()),
-        )
-        .add_system_set(
-            SystemSet::on_exit(GameState::Playing).with_system(stop_game_music.system()),
         );
     }
 }
 
-struct AudioChannels {
-    effects: AudioChannel,
-    music: AudioChannel,
+pub struct AudioChannels {
+    pub effects: AudioChannel,
+    pub music: AudioChannel,
 }
 
 fn play_menu_music(
@@ -32,15 +29,11 @@ fn play_menu_music(
     audio: Res<Audio>,
     channels: Res<AudioChannels>,
 ) {
+    audio.stop_channel(&channels.music);
     audio.set_volume_in_channel(0.5, &channels.music);
     audio.play_looped_in_channel(audio_assets.music.clone(), &channels.music);
 }
 
 fn play_game_music(audio: Res<Audio>, channels: Res<AudioChannels>) {
     audio.set_volume_in_channel(0.3, &channels.music);
-}
-
-fn stop_game_music(audio: Res<Audio>, channels: Res<AudioChannels>) {
-    audio.stop_channel(&channels.effects);
-    audio.stop_channel(&channels.music);
 }
