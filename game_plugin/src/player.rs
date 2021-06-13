@@ -228,7 +228,7 @@ pub fn is_player_dead_checks(
                 ship.is_dead = true;
                 commands
                     .entity(player)
-                    .insert(IsDead("The ships collided!".into()));
+                    .insert(IsDead("The tractors collided!".into()));
             } else if ship.separation_strain > MAX_SEPARATION_STRAIN {
                 println!("Tether broke!");
                 ship.is_dead = true;
