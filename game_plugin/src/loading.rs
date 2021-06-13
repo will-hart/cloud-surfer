@@ -28,7 +28,11 @@ pub struct FontAssets {
 }
 
 pub struct AudioAssets {
-    pub flying: Handle<AudioSource>,
+    pub collect: Handle<AudioSource>,
+    pub collide: Handle<AudioSource>,
+    pub collide_obstacle: Handle<AudioSource>,
+    pub menu_music: Handle<AudioSource>,
+    pub music: Handle<AudioSource>,
 }
 
 pub struct TextureAssets {
@@ -44,7 +48,11 @@ fn start_loading(mut commands: Commands, asset_server: Res<AssetServer>) {
     fonts.push(asset_server.load_untyped(PATHS.fira_sans));
 
     let mut audio: Vec<HandleUntyped> = vec![];
-    audio.push(asset_server.load_untyped(PATHS.audio_flying));
+    audio.push(asset_server.load_untyped(PATHS.audio_collect));
+    audio.push(asset_server.load_untyped(PATHS.audio_collide));
+    audio.push(asset_server.load_untyped(PATHS.audio_collide_obstacle));
+    audio.push(asset_server.load_untyped(PATHS.audio_music));
+    audio.push(asset_server.load_untyped(PATHS.audio_menu_music));
 
     let mut textures: Vec<HandleUntyped> = vec![];
     textures.push(asset_server.load_untyped(PATHS.cloud_001));
@@ -87,7 +95,11 @@ fn check_state(
     });
 
     commands.insert_resource(AudioAssets {
-        flying: asset_server.get_handle(PATHS.audio_flying),
+        collect: asset_server.get_handle(PATHS.audio_collect),
+        collide: asset_server.get_handle(PATHS.audio_collide),
+        collide_obstacle: asset_server.get_handle(PATHS.audio_collide_obstacle),
+        menu_music: asset_server.get_handle(PATHS.audio_menu_music),
+        music: asset_server.get_handle(PATHS.audio_music),
     });
 
     commands.insert_resource(TextureAssets {

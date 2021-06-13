@@ -8,23 +8,46 @@ pub struct InternalAudioPlugin;
 impl Plugin for InternalAudioPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.insert_resource(AudioChannels {
-            flying: AudioChannel::new("flying".to_owned()),
+            effects: AudioChannel::new("effects".to_owned()),
+            music: AudioChannel::new("music".to_owned()),
         })
         .add_plugin(AudioPlugin)
-        .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(start_audio.system()))
-        .add_system_set(SystemSet::on_exit(GameState::Playing).with_system(stop_audio.system()));
+        .add_system_set(SystemSet::on_enter(GameState::Menu).with_system(play_menu_music.system()))
+        .add_system_set(
+            SystemSet::on_enter(GameState::Playing).with_system(play_game_music.system()),
+        )
+        .add_system_set(
+            SystemSet::on_exit(GameState::Playing).with_system(stop_game_music.system()),
+        );
     }
 }
 
 struct AudioChannels {
-    flying: AudioChannel,
+    effects: AudioChannel,
+    music: AudioChannel,
 }
 
-fn start_audio(audio_assets: Res<AudioAssets>, audio: Res<Audio>, channels: Res<AudioChannels>) {
-    audio.set_volume_in_channel(0.3, &channels.flying);
-    audio.play_looped_in_channel(audio_assets.flying.clone(), &channels.flying);
+fn play_menu_music(
+    audio_assets: Res<AudioAssets>,
+    audio: Res<Audio>,
+    channels: Res<AudioChannels>,
+) {
+    audio.stop_channel(&channels.music);
+    audio.set_volume_in_channel(0.5, &channels.music);
+    audio.play_looped_in_channel(audio_assets.menu_music.clone(), &channels.music);
 }
 
-fn stop_audio(audio: Res<Audio>, channels: Res<AudioChannels>) {
-    audio.stop_channel(&channels.flying);
+fn play_game_music(
+    audio_assets: Res<AudioAssets>,
+    audio: Res<Audio>,
+    channels: Res<AudioChannels>,
+) {
+    audio.set_volume_in_channel(0.4, &channels.music);
+    audio.stop_channel(&channels.music);
+    audio.play_looped_in_channel(audio_assets.music.clone(), &channels.music);
+}
+
+fn stop_game_music(audio: Res<Audio>, channels: Res<AudioChannels>) {
+    audio.stop_channel(&channels.effects);
+    audio.stop_channel(&channels.music);
 }
