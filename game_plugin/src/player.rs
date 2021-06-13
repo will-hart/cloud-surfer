@@ -64,7 +64,7 @@ fn spawn_player(
         is_dead: false,
         speed: 150.,
 
-        max_separation: 3. * game_map.sprite_size,
+        max_separation: 5. * game_map.sprite_size,
         separation_strain: 0.,
 
         target_left: -game_map.sprite_size,
