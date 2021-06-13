@@ -23,7 +23,7 @@ fn main() {
         .insert_resource(WindowDescriptor {
             width: (game_map.width + 2. * game_map.pad_x) * game_map.sprite_size,
             height: (game_map.height + 2. * game_map.pad_y) * game_map.sprite_size,
-            title: "Cloud Surfer".to_string(),
+            title: "Hyper Farmer".to_string(),
             ..Default::default()
         })
         .insert_resource(game_map)

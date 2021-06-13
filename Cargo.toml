@@ -1,5 +1,5 @@
 [package]
-name = "cloud_surfer"
+name = "hyper_farmer"
 version = "0.1.0"
 publish = false
 authors = ["William Hart <hart.wl@gmail.com>"]

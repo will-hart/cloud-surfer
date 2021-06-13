@@ -5,17 +5,17 @@
         <key>CFBundleDevelopmentRegion</key>
         <string>en</string>
         <key>CFBundleDisplayName</key>
-        <string>CloudSurfer</string>
+        <string>HyperFarmer</string>
         <key>CFBundleExecutable</key>
-        <string>cloud_surfer</string>
+        <string>hyper_farmer</string>
         <key>CFBundleIconFile</key>
         <string>AppIcon.icns</string>
         <key>CFBundleIdentifier</key>
-        <string>io.willhart.cloud-surfer</string>
+        <string>io.willhart.hyper_farmer</string>
         <key>CFBundleInfoDictionaryVersion</key>
         <string>6.0</string>
         <key>CFBundleName</key>
-        <string>Cloud Surfer</string>
+        <string>Hyper Farmer</string>
         <key>CFBundlePackageType</key>
         <string>APPL</string>
         <key>CFBundleShortVersionString</key>
