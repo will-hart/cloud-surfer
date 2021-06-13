@@ -162,7 +162,10 @@ fn move_player(
         return;
     }
 
-    let delta_move = ship.speed * time.delta;
+    // remove the multiplier from delta_move so the ship doesn't get faster over time
+    let delta_move = ship.speed * 1.5 * (time.delta / time.multiplier);
+
+    // calculate movement
     let moves = (actions.player_left_move, actions.player_right_move);
     let sides = get_ship_sides(&mut ship_sides);
     let x_bound = game_map.get_x_bound();
