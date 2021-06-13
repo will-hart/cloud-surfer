@@ -1,4 +1,4 @@
-use crate::GameState;
+use crate::{actions::Actions, GameState};
 use bevy::prelude::*;
 
 pub struct MenuPlugin;
@@ -9,7 +9,8 @@ impl Plugin for MenuPlugin {
             .add_system_set(SystemSet::on_enter(GameState::Menu).with_system(setup_menu.system()))
             .add_system_set(
                 SystemSet::on_update(GameState::Menu).with_system(click_play_button.system()),
-            );
+            )
+            .add_system_set(SystemSet::on_exit(GameState::Menu).with_system(despawn_menu.system()));
     }
 }
 
@@ -75,18 +76,19 @@ type ButtonInteraction<'a> = (
 );
 
 fn click_play_button(
-    mut commands: Commands,
+    actions: Res<Actions>,
     button_materials: Res<ButtonMaterials>,
     mut state: ResMut<State<GameState>>,
     mut interaction_query: Query<ButtonInteraction, (Changed<Interaction>, With<Button>)>,
-    text_query: Query<Entity, With<Text>>,
 ) {
-    for (button, interaction, mut material, children) in interaction_query.iter_mut() {
-        let text = text_query.get(children[0]).unwrap();
+    if actions.restart_requested {
+        state.set(GameState::Playing).unwrap();
+        return;
+    }
+
+    for (_, interaction, mut material, _) in interaction_query.iter_mut() {
         match *interaction {
             Interaction::Clicked => {
-                commands.entity(button).despawn();
-                commands.entity(text).despawn();
                 state.set(GameState::Playing).unwrap();
             }
             Interaction::Hovered => {
@@ -96,5 +98,11 @@ fn click_play_button(
                 *material = button_materials.normal.clone();
             }
         }
+    }
+}
+
+fn despawn_menu(mut commands: Commands, items: Query<Entity, With<PlayButton>>) {
+    for item in items.iter() {
+        commands.entity(item).despawn_recursive();
     }
 }

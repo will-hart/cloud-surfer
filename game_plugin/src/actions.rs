@@ -1,13 +1,11 @@
-use crate::GameState;
 use bevy::prelude::*;
 
 pub struct ActionsPlugin;
 
 impl Plugin for ActionsPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.init_resource::<Actions>().add_system_set(
-            SystemSet::on_update(GameState::Playing).with_system(set_movement_actions.system()),
-        );
+        app.init_resource::<Actions>()
+            .add_system(set_movement_actions.system());
     }
 }
 
@@ -15,8 +13,10 @@ impl Plugin for ActionsPlugin {
 pub struct Actions {
     pub player_left_move: i8,
     pub player_right_move: i8,
+    pub restart_requested: bool,
 }
 
+/// Queries actions every frame (allows navigation etc in the menu)
 fn set_movement_actions(mut actions: ResMut<Actions>, keyboard_input: Res<Input<KeyCode>>) {
     actions.player_left_move = 0;
     actions.player_right_move = 0;
@@ -36,4 +36,6 @@ fn set_movement_actions(mut actions: ResMut<Actions>, keyboard_input: Res<Input<
     if keyboard_input.pressed(KeyCode::L) {
         actions.player_right_move += 1;
     }
+
+    actions.restart_requested = keyboard_input.just_pressed(KeyCode::Space);
 }
